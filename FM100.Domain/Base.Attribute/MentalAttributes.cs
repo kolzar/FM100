@@ -1,4 +1,4 @@
-﻿namespace FM100.Domain.Base
+﻿namespace FM100.Domain.Base.Attribute
 {
     public sealed class MentalAttributes
     {

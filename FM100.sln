@@ -8,8 +8,13 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FM100.Domain", "FM100.Domai
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{F7305FD1-F573-4DA9-9360-BCA8BF8A7DE7}"
 	ProjectSection(SolutionItems) = preProject
+		.gitignore = .gitignore
 		README.md = README.md
 	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FM100.Core", "FM100.Core\FM100.Core.csproj", "{C09446C0-B0E1-485B-B147-AFCA6CE1E5BE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FM100.UnitTest", "FM100.UnitTest\FM100.UnitTest.csproj", "{8A23F242-A1FB-4CE8-A3C9-0948A4AA0758}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -25,8 +30,19 @@ Global
 		{0C5FC7BF-5FDC-C6DE-7324-96BA40336A23}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0C5FC7BF-5FDC-C6DE-7324-96BA40336A23}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0C5FC7BF-5FDC-C6DE-7324-96BA40336A23}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C09446C0-B0E1-485B-B147-AFCA6CE1E5BE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C09446C0-B0E1-485B-B147-AFCA6CE1E5BE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C09446C0-B0E1-485B-B147-AFCA6CE1E5BE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C09446C0-B0E1-485B-B147-AFCA6CE1E5BE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8A23F242-A1FB-4CE8-A3C9-0948A4AA0758}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8A23F242-A1FB-4CE8-A3C9-0948A4AA0758}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8A23F242-A1FB-4CE8-A3C9-0948A4AA0758}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8A23F242-A1FB-4CE8-A3C9-0948A4AA0758}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {E6E6D04A-7630-4D4E-8C5A-6A3FA51E370F}
 	EndGlobalSection
 EndGlobal
