@@ -18,4 +18,9 @@
     <Using Include="Xunit" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\FM100.Domain\FM100.Domain.csproj" />
+    <ProjectReference Include="..\FM100.Core\FM100.Core.csproj" />
+  </ItemGroup>
+
 </Project>
