@@ -1,0 +1,86 @@
+<UserControl x:Class="FM100.Views.MenuView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             Background="#1a1a2e"
+             Foreground="White">
+    <Grid>
+        <!-- Background Image with Overlay -->
+        <Image Source="pack://application:,,,/Assets/MenuBackground.png" 
+               Stretch="UniformToFill" 
+               Opacity="0.2"/>
+
+        <Rectangle Fill="#000000" Opacity="0.5"/>
+
+        <!-- Main Menu Content -->
+        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Width="400">
+
+            <!-- Title -->
+            <TextBlock Text="Football Manager" 
+                       FontSize="36" 
+                       FontWeight="Bold" 
+                       Foreground="White" 
+                       HorizontalAlignment="Center"
+                       Margin="0,0,0,10"/>
+
+            <TextBlock Text="Master League" 
+                       FontSize="24" 
+                       Foreground="#00d4ff" 
+                       HorizontalAlignment="Center"
+                       Margin="0,0,0,40"/>
+
+            <!-- New Game Button -->
+            <Button x:Name="NewGameButton"
+                    Content="🎮 Nuova Partita" 
+                    Height="50" 
+                    FontSize="16" 
+                    FontWeight="SemiBold"
+                    Margin="0,10,0,10"
+                    Background="#00d4ff"
+                    Foreground="Black"
+                    Style="{StaticResource MenuButtonStyle}"/>
+
+            <!-- Load Game Button -->
+            <Button x:Name="LoadGameButton"
+                    Content="📂 Carica Partita" 
+                    Height="50" 
+                    FontSize="16" 
+                    FontWeight="SemiBold"
+                    Margin="0,10,0,10"
+                    Background="#3a3a6e"
+                    Foreground="White"
+                    BorderThickness="2"
+                    BorderBrush="#00d4ff"
+                    Style="{StaticResource MenuButtonStyle}"/>
+
+            <!-- Settings Button -->
+            <Button x:Name="SettingsButton"
+                    Content="⚙️ Impostazioni" 
+                    Height="50" 
+                    FontSize="16" 
+                    FontWeight="SemiBold"
+                    Margin="0,10,0,10"
+                    Background="#3a3a6e"
+                    Foreground="White"
+                    BorderThickness="2"
+                    BorderBrush="#00d4ff"
+                    Style="{StaticResource MenuButtonStyle}"/>
+
+            <!-- Exit Button -->
+            <Button x:Name="ExitButton"
+                    Content="❌ Esci" 
+                    Height="50" 
+                    FontSize="16" 
+                    FontWeight="SemiBold"
+                    Margin="0,10,0,10"
+                    Background="#3a3a6e"
+                    Foreground="White"
+                    BorderThickness="2"
+                    BorderBrush="#888888"
+                    Style="{StaticResource MenuButtonStyle}"/>
+
+        </StackPanel>
+    </Grid>
+</UserControl>

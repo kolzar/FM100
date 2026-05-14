@@ -1,0 +1,182 @@
+<UserControl x:Class="FM100.Views.GameView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             Background="#1a1a2e"
+             Foreground="White">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="200"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- LEFT SIDEBAR - Navigation Menu -->
+        <Border Grid.Column="0" Background="#0f0f1e" BorderBrush="#00d4ff" BorderThickness="0,0,2,0">
+            <StackPanel Margin="0,20,0,0" VerticalAlignment="Top">
+
+                <!-- Team Logo & Name -->
+                <StackPanel HorizontalAlignment="Center" Margin="0,0,0,30">
+                    <Rectangle Width="80" Height="80" Fill="#3a3a6e" RadiusX="10" RadiusY="10" Margin="0,0,0,10"/>
+                    <TextBlock x:Name="TeamNameSidebar" 
+                               Text="My Team" 
+                               FontSize="12" 
+                               Foreground="White" 
+                               HorizontalAlignment="Center"
+                               TextAlignment="Center"/>
+                </StackPanel>
+
+                <!-- Menu Buttons -->
+                <Button x:Name="DashboardButton"
+                        Content="📊 Dashboard" 
+                        Height="50" 
+                        Margin="10,5,10,5"
+                        Background="#00d4ff"
+                        Foreground="Black"
+                        FontWeight="SemiBold"
+                        Style="{StaticResource SidebarButtonStyle}"/>
+
+                <Button x:Name="SquadButton"
+                        Content="👥 Rosa" 
+                        Height="50" 
+                        Margin="10,5,10,5"
+                        Background="#3a3a6e"
+                        Foreground="White"
+                        BorderBrush="#00d4ff"
+                        BorderThickness="1"
+                        Style="{StaticResource SidebarButtonStyle}"/>
+
+                <Button x:Name="TacticsButton"
+                        Content="🎯 Tattica" 
+                        Height="50" 
+                        Margin="10,5,10,5"
+                        Background="#3a3a6e"
+                        Foreground="White"
+                        BorderBrush="#00d4ff"
+                        BorderThickness="1"
+                        Style="{StaticResource SidebarButtonStyle}"/>
+
+                <Button x:Name="TransfersButton"
+                        Content="🔄 Trasferimenti" 
+                        Height="50" 
+                        Margin="10,5,10,5"
+                        Background="#3a3a6e"
+                        Foreground="White"
+                        BorderBrush="#00d4ff"
+                        BorderThickness="1"
+                        Style="{StaticResource SidebarButtonStyle}"/>
+
+                <Button x:Name="FixturesButton"
+                        Content="📅 Calendario" 
+                        Height="50" 
+                        Margin="10,5,10,5"
+                        Background="#3a3a6e"
+                        Foreground="White"
+                        BorderBrush="#00d4ff"
+                        BorderThickness="1"
+                        Style="{StaticResource SidebarButtonStyle}"/>
+
+                <Button x:Name="StandingsButton"
+                        Content="📈 Classifica" 
+                        Height="50" 
+                        Margin="10,5,10,5"
+                        Background="#3a3a6e"
+                        Foreground="White"
+                        BorderBrush="#00d4ff"
+                        BorderThickness="1"
+                        Style="{StaticResource SidebarButtonStyle}"/>
+
+                <Button x:Name="FinancesButton"
+                        Content="💰 Finanze" 
+                        Height="50" 
+                        Margin="10,5,10,5"
+                        Background="#3a3a6e"
+                        Foreground="White"
+                        BorderBrush="#00d4ff"
+                        BorderThickness="1"
+                        Style="{StaticResource SidebarButtonStyle}"/>
+
+                <Rectangle Height="1" Fill="#3a3a6e" Margin="10,15,10,15"/>
+
+                <Button x:Name="SettingsGameButton"
+                        Content="⚙️ Impostazioni" 
+                        Height="50" 
+                        Margin="10,5,10,5"
+                        Background="#3a3a6e"
+                        Foreground="White"
+                        BorderBrush="#888888"
+                        BorderThickness="1"
+                        Style="{StaticResource SidebarButtonStyle}"/>
+
+                <Button x:Name="SaveGameButton"
+                        Content="💾 Salva" 
+                        Height="50" 
+                        Margin="10,5,10,5"
+                        Background="#3a3a6e"
+                        Foreground="White"
+                        BorderBrush="#888888"
+                        BorderThickness="1"
+                        Style="{StaticResource SidebarButtonStyle}"/>
+
+                <Button x:Name="ExitGameButton"
+                        Content="❌ Esci al Menu" 
+                        Height="50" 
+                        Margin="10,5,10,5"
+                        Background="#3a3a6e"
+                        Foreground="White"
+                        BorderBrush="#888888"
+                        BorderThickness="1"
+                        Style="{StaticResource SidebarButtonStyle}"/>
+
+            </StackPanel>
+        </Border>
+
+        <!-- RIGHT CONTENT AREA - Main Game View -->
+        <Grid Grid.Column="1" Background="#1a1a2e">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="60"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <!-- Top Header Bar -->
+            <Border Grid.Row="0" Background="#0f0f1e" BorderBrush="#00d4ff" BorderThickness="0,0,0,1">
+                <StackPanel Orientation="Horizontal" Margin="20,0" VerticalAlignment="Center">
+                    <TextBlock x:Name="SeasonDisplay" 
+                               Text="Stagione 1 - Week 1" 
+                               FontSize="16" 
+                               FontWeight="Bold" 
+                               Foreground="#00d4ff"/>
+
+                    <Separator Width="1" Margin="20,0" Background="#3a3a6e"/>
+
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="Prossima Partita: " 
+                                   FontSize="12" 
+                                   Foreground="#B0B0B0"/>
+                        <TextBlock x:Name="NextMatchDisplay" 
+                                   Text="Team A vs Team B" 
+                                   FontSize="12" 
+                                   Foreground="White"/>
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,20,0">
+                        <TextBlock Text="Budget: " 
+                                   FontSize="12" 
+                                   Foreground="#B0B0B0"
+                                   Margin="0,0,5,0"/>
+                        <TextBlock x:Name="BudgetDisplay" 
+                                   Text="€5.000.000" 
+                                   FontSize="12" 
+                                   Foreground="#00d4ff"
+                                   FontWeight="Bold"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- Main Content Area -->
+            <ContentControl x:Name="ContentArea" Grid.Row="1" Margin="20"/>
+
+        </Grid>
+    </Grid>
+</UserControl>

@@ -1,0 +1,31 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <!-- Color Palette -->
+    <SolidColorBrush x:Key="AccentBrush" Color="#00d4ff"/>
+    <SolidColorBrush x:Key="AccentLightBrush" Color="#00e6ff"/>
+    <SolidColorBrush x:Key="AccentDarkBrush" Color="#0099aa"/>
+
+    <SolidColorBrush x:Key="PrimaryBackgroundBrush" Color="#1a1a2e"/>
+    <SolidColorBrush x:Key="SecondaryBackgroundBrush" Color="#0f0f1e"/>
+    <SolidColorBrush x:Key="TertiaryBackgroundBrush" Color="#3a3a6e"/>
+
+    <SolidColorBrush x:Key="PrimaryTextBrush" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="SecondaryTextBrush" Color="#B0B0B0"/>
+    <SolidColorBrush x:Key="BlackBrush" Color="#000000"/>
+
+    <!-- Font Sizes -->
+    <sys:Double x:Key="TitleFontSize">32</sys:Double>
+    <sys:Double x:Key="SubtitleFontSize">24</sys:Double>
+    <sys:Double x:Key="LargeFontSize">16</sys:Double>
+    <sys:Double x:Key="NormalFontSize">14</sys:Double>
+    <sys:Double x:Key="SmallFontSize">12</sys:Double>
+
+    <!-- Spacing -->
+    <Thickness x:Key="SmallMargin">5</Thickness>
+    <Thickness x:Key="NormalMargin">10</Thickness>
+    <Thickness x:Key="LargeMargin">20</Thickness>
+    <Thickness x:Key="ExtraLargeMargin">40</Thickness>
+
+</ResourceDictionary>

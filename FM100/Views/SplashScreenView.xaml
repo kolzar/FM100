@@ -1,0 +1,52 @@
+<UserControl x:Class="FM100.Views.SplashScreenView"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Height="600" Width="800">
+    <Grid Background="#1a1a2e">
+        <!-- Background Image -->
+        <Image Source="pack://application:,,,/Assets/SplashBackground.png" 
+               Stretch="UniformToFill" 
+               Opacity="0.3"/>
+
+        <!-- Dark Overlay -->
+        <Rectangle Fill="#000000" Opacity="0.4"/>
+
+        <!-- Logo Container -->
+        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+            <!-- Logo Image -->
+            <Image x:Name="LogoImage" 
+                   Height="150" 
+                   Width="150" 
+                   Margin="0,0,0,20"
+                   HorizontalAlignment="Center"
+                   Opacity="0.9"/>
+
+            <!-- Title -->
+            <TextBlock Text="Football Manager Master League" 
+                       FontSize="28" 
+                       FontWeight="Bold" 
+                       Foreground="White" 
+                       HorizontalAlignment="Center"
+                       TextAlignment="Center"
+                       Margin="0,0,0,10"/>
+
+            <!-- Subtitle -->
+            <TextBlock Text="Loading..." 
+                       FontSize="16" 
+                       Foreground="#B0B0B0" 
+                       HorizontalAlignment="Center"
+                       TextAlignment="Center"/>
+
+            <!-- Loading Bar -->
+            <ProgressBar x:Name="LoadingProgress" 
+                         Height="4" 
+                         Margin="40,30,40,0" 
+                         Background="#2a2a4e"
+                         Foreground="#00d4ff"
+                         IsIndeterminate="True"/>
+        </StackPanel>
+    </Grid>
+</UserControl>
