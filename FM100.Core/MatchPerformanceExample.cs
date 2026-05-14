@@ -239,7 +239,7 @@ public class MatchPerformanceExample
         Console.WriteLine($"    Motivation:  {firstPlayer.Motivation}/20");
     }
 
-    private static void PrintIndividualPerformances(
+    private void PrintIndividualPerformances(
         List<MatchEmotionalState> playerStates,
         int technicalAverage,
         int playersToShow)
@@ -250,11 +250,11 @@ public class MatchPerformanceExample
             .Select((p, i) => new
             {
                 Number = i + 1,
-                Performance = MatchPerformanceCalculator.CalculatePlayerPerformanceScore(
+                Performance = _performanceCalculator.CalculatePlayerPerformanceScore(
                     technicalAverage,
                     p),
-                Emotion = DominantEmotionCalculator.Calculate(p),
-                Stability = EmotionalStabilityCalculator.Calculate(p)
+                Emotion = _emotionCalculator.Calculate(p),
+                Stability = _stabilityCalculator.Calculate(p)
             })
             .OrderByDescending(x => x.Performance)
             .ToList();
@@ -267,12 +267,12 @@ public class MatchPerformanceExample
         }
     }
 
-    private static void PrintSquadEmotionalIndices(
+    private void PrintSquadEmotionalIndices(
         List<MatchEmotionalState> playerStates,
         DynamicState teamDynamicState)
     {
-        var moraleIndex = MatchPerformanceCalculator.CalculateMoraleIndex(playerStates);
-        var squadEmotionalIndex = MatchPerformanceCalculator.CalculateSquadEmotionalIndex(
+        var moraleIndex = _performanceCalculator.CalculateMoraleIndex(playerStates);
+        var squadEmotionalIndex = _performanceCalculator.CalculateSquadEmotionalIndex(
             playerStates,
             teamDynamicState.TeamCohesion);
 
@@ -283,7 +283,7 @@ public class MatchPerformanceExample
         Console.WriteLine($"  Average Anxiety:          {playerStates.Average(p => p.Anxiety):F1}/20");
     }
 
-    private static void PrintSquadStrengthEvaluation(
+    private void PrintSquadStrengthEvaluation(
         List<MatchEmotionalState> playerStates,
         DynamicState teamDynamicState,
         MentalAttributes mentalAttributes,
@@ -331,12 +331,12 @@ public class MatchPerformanceExample
         Console.WriteLine($"\n  Win Probability:          {winProb * 100:F1}%");
     }
 
-    private static void PrintMatchStatistics(
+    private void PrintMatchStatistics(
         List<MatchEmotionalState> playerStates,
         MentalAttributes mentalAttributes)
     {
         var avgHappiness = playerStates.Average(p => p.Happiness);
-        var avgStability = playerStates.Average(p => EmotionalStabilityCalculator.Calculate(p));
+        var avgStability = playerStates.Average(p => _stabilityCalculator.Calculate(p));
         var maxFear = playerStates.Max(p => p.Fear);
         var minFear = playerStates.Min(p => p.Fear);
 
@@ -346,8 +346,8 @@ public class MatchPerformanceExample
 
         var emotionalRanges = playerStates.Select(p => new
         {
-            Dominant = DominantEmotionCalculator.Calculate(p),
-            ImpactFactor = MatchPerformanceCalculator.CalculateMatchImpactFactor(p)
+            Dominant = _emotionCalculator.Calculate(p),
+            ImpactFactor = _performanceCalculator.CalculateMatchImpactFactor(p)
         }).ToList();
 
         var mostCommon = emotionalRanges
