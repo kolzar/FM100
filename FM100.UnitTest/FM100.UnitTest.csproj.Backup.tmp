@@ -21,6 +21,7 @@
   <ItemGroup>
     <ProjectReference Include="..\FM100.Domain\FM100.Domain.csproj" />
     <ProjectReference Include="..\FM100.Core\FM100.Core.csproj" />
+    <ProjectReference Include="..\FM100\FM100.csproj" />
   </ItemGroup>
 
   <ItemGroup>

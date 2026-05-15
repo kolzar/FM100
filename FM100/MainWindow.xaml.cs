@@ -18,7 +18,7 @@ namespace FM100
     /// </summary>
     public partial class MainWindow : Window
     {
-        private DispatcherTimer _splashTimer;
+        private DispatcherTimer? _splashTimer;
 
         public MainWindow()
         {
@@ -45,7 +45,7 @@ namespace FM100
             _splashTimer.Interval = TimeSpan.FromSeconds(3);
             _splashTimer.Tick += (s, e) =>
             {
-                _splashTimer.Stop();
+                _splashTimer?.Stop();
                 ShowMainMenu();
             };
             _splashTimer.Start();
