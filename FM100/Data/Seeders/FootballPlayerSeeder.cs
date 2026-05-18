@@ -64,15 +64,27 @@ public class FootballPlayerSeeder
     /// </summary>
     private DynamicState GenerateDynamicState()
     {
-        return new DynamicState
+        try
         {
-            Happiness = _randomizer.Int(1, 20),
-            Anger = _randomizer.Int(1, 20),
-            Fear = _randomizer.Int(1, 20),
-            Sadness = _randomizer.Int(1, 20),
-            Anxiety = _randomizer.Int(1, 20),
-            Morale = _randomizer.Int(1, 20)
-        };
+            if (_randomizer == null)
+            {
+                _randomizer = new Randomizer();
+            }
+
+            return new DynamicState
+            {
+                Happiness = _randomizer.Int(1, 20),
+                Anger = _randomizer.Int(1, 20),
+                Fear = _randomizer.Int(1, 20),
+                Sadness = _randomizer.Int(1, 20),
+                Anxiety = _randomizer.Int(1, 20),
+                Morale = _randomizer.Int(1, 20)
+            };
+        }
+        catch
+        {
+            return new DynamicState();
+        }
     }
 
     /// <summary>
@@ -80,20 +92,32 @@ public class FootballPlayerSeeder
     /// </summary>
     private MentalAttributes GenerateMentalAttributes()
     {
-        return new MentalAttributes
+        try
         {
-            Composure = _randomizer.Int(1, 20),
-            Concentration = _randomizer.Int(1, 20),
-            Leadership = _randomizer.Int(1, 20),
-            Courage = _randomizer.Int(1, 20),
-            Aggression = _randomizer.Int(1, 20),
-            TacticalIntelligence = _randomizer.Int(1, 20),
-            Resilience = _randomizer.Int(1, 20),
-            Ambition = _randomizer.Int(1, 20),
-            Discipline = _randomizer.Int(1, 20),
-            Loyalty = _randomizer.Int(1, 20),
-            PressureHandling = _randomizer.Int(1, 20)
-        };
+            if (_randomizer == null)
+            {
+                _randomizer = new Randomizer();
+            }
+
+            return new MentalAttributes
+            {
+                Composure = _randomizer.Int(1, 20),
+                Concentration = _randomizer.Int(1, 20),
+                Leadership = _randomizer.Int(1, 20),
+                Courage = _randomizer.Int(1, 20),
+                Aggression = _randomizer.Int(1, 20),
+                TacticalIntelligence = _randomizer.Int(1, 20),
+                Resilience = _randomizer.Int(1, 20),
+                Ambition = _randomizer.Int(1, 20),
+                Discipline = _randomizer.Int(1, 20),
+                Loyalty = _randomizer.Int(1, 20),
+                PressureHandling = _randomizer.Int(1, 20)
+            };
+        }
+        catch
+        {
+            return new MentalAttributes();
+        }
     }
 
     /// <summary>
