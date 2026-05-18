@@ -58,7 +58,7 @@ public class FootballPlayerRepository : IFootballPlayerRepository
     {
         using (var connection = new SQLiteConnection(_connectionString))
         {
-            connection.Open();
+            await connection.OpenAsync();
 
             var sql = @"
                 INSERT INTO FootballPlayers 
@@ -94,7 +94,7 @@ public class FootballPlayerRepository : IFootballPlayerRepository
     {
         using (var connection = new SQLiteConnection(_connectionString))
         {
-            connection.Open();
+            await connection.OpenAsync();
 
             var sql = @"
                 UPDATE FootballPlayers 
@@ -140,28 +140,62 @@ public class FootballPlayerRepository : IFootballPlayerRepository
     }
 
     /// <summary>
-    /// Maps database record to FootballPlayer domain object.
+    /// Maps database record to FootballPlayer domain object with safe parsing.
     /// </summary>
     private static FootballPlayer MapToDomain(dynamic dbPlayer)
     {
+        Guid.TryParse(dbPlayer.Id?.ToString(), out Guid id);
+
         return new FootballPlayer
         {
-            Id = Guid.Parse(dbPlayer.Id),
-            FirstName = dbPlayer.FirstName,
-            LastName = dbPlayer.LastName,
-            BirthDate = DateTime.Parse(dbPlayer.BirthDate),
-            Age = dbPlayer.Age,
-            Nationality = dbPlayer.Nationality,
+            Id = id != Guid.Empty ? id : Guid.NewGuid(),
+            FirstName = dbPlayer.FirstName ?? string.Empty,
+            LastName = dbPlayer.LastName ?? string.Empty,
+            BirthDate = SafeParseDateTime(dbPlayer.BirthDate?.ToString()) ?? DateTime.Now.AddYears(-25),
+            Age = dbPlayer.Age ?? 25,
+            Nationality = dbPlayer.Nationality ?? string.Empty,
             Description = dbPlayer.Description ?? string.Empty,
-            Height = dbPlayer.Height,
-            Weight = dbPlayer.Weight,
+            Height = dbPlayer.Height ?? 180,
+            Weight = dbPlayer.Weight ?? 75,
             ShirtNumber = dbPlayer.ShirtNumber,
-            Potential = dbPlayer.Potential,
-            Reputation = dbPlayer.Reputation,
-            MarketValue = dbPlayer.MarketValue,
-            CurrentState = JsonSerializer.Deserialize<DynamicState>(dbPlayer.CurrentState) ?? new DynamicState(),
-            MentalAttributes = JsonSerializer.Deserialize<MentalAttributes>(dbPlayer.MentalAttributes) ?? new MentalAttributes()
+            Potential = dbPlayer.Potential ?? 70,
+            Reputation = dbPlayer.Reputation ?? 10,
+            MarketValue = dbPlayer.MarketValue ?? 5,
+            CurrentState = SafeDeserializeJson<DynamicState>(dbPlayer.CurrentState?.ToString()) ?? new DynamicState(),
+            MentalAttributes = SafeDeserializeJson<MentalAttributes>(dbPlayer.MentalAttributes?.ToString()) ?? new MentalAttributes()
         };
+    }
+
+    /// <summary>
+    /// Safely parses DateTime strings.
+    /// </summary>
+    private static DateTime? SafeParseDateTime(string? dateString)
+    {
+        if (string.IsNullOrEmpty(dateString))
+            return null;
+
+        if (DateTime.TryParse(dateString, out var result))
+            return result;
+
+        return null;
+    }
+
+    /// <summary>
+    /// Safely deserializes JSON with error handling.
+    /// </summary>
+    private static T? SafeDeserializeJson<T>(string? json) where T : class
+    {
+        if (string.IsNullOrEmpty(json))
+            return null;
+
+        try
+        {
+            return JsonSerializer.Deserialize<T>(json);
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     /// <summary>
