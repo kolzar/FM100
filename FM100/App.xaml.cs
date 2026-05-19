@@ -31,6 +31,9 @@ namespace FM100
             // Register core services
             services.AddPerformanceServices();
 
+            // Register game management services
+            services.AddGameManagementServices();
+
             _serviceProvider = services.BuildServiceProvider();
         }
 

@@ -1,14 +1,9 @@
-﻿using System.Text;
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 using System.Windows.Threading;
+using FM100.Core.Management;
+using FM100.Core.GameState;
+using FM100.Domain.Club;
 using FM100.Views;
 
 namespace FM100
@@ -19,6 +14,8 @@ namespace FM100
     public partial class MainWindow : Window
     {
         private DispatcherTimer? _splashTimer;
+        private IGameManager? _gameManager;
+        private GameState? _currentGameState;
 
         public MainWindow()
         {
@@ -29,9 +26,13 @@ namespace FM100
         {
             base.OnContentRendered(e);
 
+            // Get GameManager from DI
+            var app = Application.Current as App;
+            _gameManager = app?.GetServiceProvider().GetService(typeof(IGameManager)) as IGameManager;
+
             // Defer the content assignment to allow the visual tree to fully initialize
             Dispatcher.BeginInvoke(new Action(() => ShowSplashScreen()), 
-                System.Windows.Threading.DispatcherPriority.Loaded);
+                DispatcherPriority.Loaded);
         }
 
         private void ShowSplashScreen()
@@ -58,17 +59,17 @@ namespace FM100
             // Wire up menu button events
             if (menuView.FindName("NewGameButton") is Button newGameBtn)
             {
-                newGameBtn.Click += (s, e) => ShowCoachCustomization();
+                newGameBtn.Click += (s, e) => ShowClubSelection();
             }
 
             if (menuView.FindName("LoadGameButton") is Button loadGameBtn)
             {
-                loadGameBtn.Click += (s, e) => MessageBox.Show("Funzionalità in sviluppo", "Carica Partita");
+                loadGameBtn.Click += (s, e) => MessageBox.Show("Load game coming soon!", "Load Game");
             }
 
             if (menuView.FindName("SettingsButton") is Button settingsBtn)
             {
-                settingsBtn.Click += (s, e) => MessageBox.Show("Funzionalità in sviluppo", "Impostazioni");
+                settingsBtn.Click += (s, e) => MessageBox.Show("Settings coming soon!", "Settings");
             }
 
             if (menuView.FindName("ExitButton") is Button exitBtn)
@@ -79,21 +80,51 @@ namespace FM100
             ViewHost.Content = menuView;
         }
 
-        private void ShowCoachCustomization()
+        private void ShowClubSelection()
         {
-            var customizationView = new CoachCustomizationView();
-
-            if (customizationView.FindName("CancelButton") is Button cancelBtn)
+            var clubSelectionView = new ClubSelectionView();
+            clubSelectionView.GameStarted += async (s, e) =>
             {
-                cancelBtn.Click += (s, e) => ShowMainMenu();
+                await StartNewGame(e.SelectedClub, e.Difficulty);
+            };
+            clubSelectionView.Show();
+        }
+
+        private async Task StartNewGame(Club selectedClub, int difficulty)
+        {
+            try
+            {
+                MessageBox.Show("Initializing game world...", "Starting Game");
+
+                if (_gameManager == null)
+                {
+                    MessageBox.Show("Game manager not initialized!", "Error");
+                    return;
+                }
+
+                // Create new game state
+                _currentGameState = await _gameManager.StartNewGameAsync(selectedClub.Name, selectedClub.Division, difficulty);
+
+                // Show game dashboard
+                ShowGameDashboard();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to start game: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void ShowGameDashboard()
+        {
+            if (_currentGameState == null)
+            {
+                MessageBox.Show("No active game state!", "Error");
+                return;
             }
 
-            if (customizationView.FindName("ContinueButton") is Button continueBtn)
-            {
-                continueBtn.Click += (s, e) => ShowGameArea();
-            }
-
-            ViewHost.Content = customizationView;
+            var dashboard = new GameDashboardView();
+            dashboard.Initialize(_currentGameState);
+            ViewHost.Content = dashboard;
         }
 
         private void ShowGameArea()
@@ -140,7 +171,7 @@ namespace FM100
             {
                 exitGameBtn.Click += (s, e) =>
                 {
-                    MessageBox.Show("Partita salvata!", "Arrivederci");
+                    MessageBox.Show("Game saved!", "Exit");
                     ShowMainMenu();
                 };
             }
@@ -150,7 +181,7 @@ namespace FM100
 
         private void ShowGameContent(string section)
         {
-            MessageBox.Show($"Sezione: {section} - In sviluppo", "Gioco");
+            MessageBox.Show($"Section: {section} - Coming soon!", "Feature");
         }
     }
 }
