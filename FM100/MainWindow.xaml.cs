@@ -64,7 +64,7 @@ namespace FM100
 
             if (menuView.FindName("LoadGameButton") is Button loadGameBtn)
             {
-                loadGameBtn.Click += (s, e) => MessageBox.Show("Load game coming soon!", "Load Game");
+                loadGameBtn.Click += async (s, e) => await ShowLoadGameDialog();
             }
 
             if (menuView.FindName("SettingsButton") is Button settingsBtn)
@@ -123,7 +123,7 @@ namespace FM100
             }
 
             var dashboard = new GameDashboardView();
-            dashboard.Initialize(_currentGameState);
+            dashboard.Initialize(_currentGameState, _gameManager);
             ViewHost.Content = dashboard;
         }
 
@@ -182,6 +182,64 @@ namespace FM100
         private void ShowGameContent(string section)
         {
             MessageBox.Show($"Section: {section} - Coming soon!", "Feature");
+        }
+
+        private async Task ShowLoadGameDialog()
+        {
+            if (_gameManager == null)
+            {
+                MessageBox.Show("Game manager not initialized!", "Error");
+                return;
+            }
+
+            var loadDialog = new LoadGameDialog(_gameManager)
+            {
+                Owner = this
+            };
+
+            if (loadDialog.ShowDialog() == true && loadDialog.SelectedSaveId.HasValue)
+            {
+                // Show confirmation
+                var confirmResult = MessageBox.Show(
+                    "Load this saved game?",
+                    "Load Game",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Question);
+
+                if (confirmResult == MessageBoxResult.Yes)
+                {
+                    await LoadGame(loadDialog.SelectedSaveId.Value);
+                }
+            }
+        }
+
+        private async Task LoadGame(Guid saveId)
+        {
+            try
+            {
+                if (_gameManager == null)
+                {
+                    MessageBox.Show("Game manager not initialized!", "Error");
+                    return;
+                }
+
+                MessageBox.Show("Loading game...", "Loading");
+
+                _currentGameState = await _gameManager.LoadGameAsync(saveId);
+
+                if (_currentGameState == null)
+                {
+                    MessageBox.Show("Failed to load game state!", "Error");
+                    return;
+                }
+
+                // Show the loaded game dashboard
+                ShowGameDashboard();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error loading game: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
     }
 }

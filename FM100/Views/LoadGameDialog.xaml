@@ -1,0 +1,126 @@
+<Window x:Class="FM100.Views.LoadGameDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Load Game" 
+        Height="500" 
+        Width="600"
+        WindowStartupLocation="CenterOwner"
+        Background="{StaticResource PrimaryBackgroundBrush}"
+        Foreground="{StaticResource PrimaryTextBrush}"
+        FontFamily="Segoe UI"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        WindowStyle="SingleBorderWindow">
+
+    <Grid Margin="{StaticResource LargeMargin}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Title -->
+        <TextBlock Grid.Row="0" 
+                   Text="Load Game" 
+                   FontSize="{StaticResource SubtitleFontSize}" 
+                   FontWeight="Bold"
+                   Foreground="{StaticResource AccentBrush}"
+                   Margin="0,0,0,20"/>
+
+        <!-- Saves List -->
+        <Border Grid.Row="1"
+                Background="#2d2d2d"
+                BorderBrush="{StaticResource AccentBrush}"
+                BorderThickness="1"
+                Margin="0,0,0,20">
+            <ListBox x:Name="SavesListBox"
+                     Background="Transparent"
+                     BorderThickness="0"
+                     ScrollViewer.VerticalScrollBarVisibility="Auto">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <Border Background="Transparent" 
+                                Padding="10" 
+                                Margin="0,5">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+
+                                <!-- Save Info -->
+                                <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                    <TextBlock FontSize="{StaticResource NormalFontSize}"
+                                               FontWeight="Bold"
+                                               Foreground="{StaticResource AccentBrush}"
+                                               Text="{Binding SaveName}"/>
+                                    <TextBlock FontSize="{StaticResource SmallFontSize}"
+                                               Foreground="{StaticResource SecondaryTextBrush}"
+                                               Margin="0,5,0,0">
+                                        <Run Text="Club: "/>
+                                        <Run Text="{Binding ClubName}"/>
+                                        <Run Text=" • Season "/>
+                                        <Run Text="{Binding CurrentSeason}"/>
+                                    </TextBlock>
+                                    <TextBlock FontSize="{StaticResource SmallFontSize}"
+                                               Foreground="{StaticResource SecondaryTextBrush}"
+                                               Text="{Binding LastSavedAtFormatted}"
+                                               Margin="0,3,0,0"/>
+                                </StackPanel>
+
+                                <!-- Delete Button -->
+                                <Button Grid.Column="1"
+                                        Content="Delete"
+                                        Width="70"
+                                        Height="30"
+                                        Background="#cc0000"
+                                        Foreground="{StaticResource PrimaryTextBrush}"
+                                        FontSize="{StaticResource SmallFontSize}"
+                                        VerticalAlignment="Center"
+                                        Tag="{Binding SaveId}"
+                                        Click="DeleteButton_Click"/>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </Border>
+
+        <!-- No Saves Message -->
+        <TextBlock x:Name="NoSavesMessage"
+                   Grid.Row="1"
+                   Text="No saved games found."
+                   FontSize="{StaticResource NormalFontSize}"
+                   Foreground="{StaticResource SecondaryTextBrush}"
+                   VerticalAlignment="Center"
+                   HorizontalAlignment="Center"
+                   Visibility="Collapsed"/>
+
+        <!-- Buttons -->
+        <StackPanel Grid.Row="2" 
+                    Orientation="Horizontal" 
+                    HorizontalAlignment="Right"
+                    Margin="0,20,0,0">
+            <Button x:Name="LoadButton"
+                    Content="Load"
+                    Width="100"
+                    Height="40"
+                    Margin="0,0,10,0"
+                    Background="{StaticResource AccentBrush}"
+                    Foreground="{StaticResource BlackBrush}"
+                    FontWeight="Bold"
+                    Cursor="Hand"
+                    Click="LoadButton_Click"/>
+            <Button x:Name="CancelButton"
+                    Content="Cancel"
+                    Width="100"
+                    Height="40"
+                    Background="#3a3a3a"
+                    Foreground="{StaticResource PrimaryTextBrush}"
+                    BorderBrush="{StaticResource SecondaryTextBrush}"
+                    BorderThickness="1"
+                    Cursor="Hand"
+                    Click="CancelButton_Click"/>
+        </StackPanel>
+    </Grid>
+</Window>

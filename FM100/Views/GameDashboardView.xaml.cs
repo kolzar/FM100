@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using FM100.Core.GameState;
+using FM100.Core.Management;
 using FM100.Domain.Club;
 using FM100.Domain.League;
 
@@ -10,28 +11,30 @@ namespace FM100.Views
     /// Game dashboard showing league standings, fixtures, and season progress.
     /// </summary>
     public partial class GameDashboardView : Window
-{
-    private GameState? _gameState;
-    private League? _currentLeague;
-
-    public GameDashboardView()
     {
-        InitializeComponent();
-    }
+        private GameState? _gameState;
+        private League? _currentLeague;
+        private IGameManager? _gameManager;
 
-    /// <summary>
-    /// Initialize the dashboard with game state data.
-    /// </summary>
-    public void Initialize(GameState gameState)
-    {
-        _gameState = gameState ?? throw new ArgumentNullException(nameof(gameState));
-        _currentLeague = gameState.GetCurrentLeague();
+        public GameDashboardView()
+        {
+            InitializeComponent();
+        }
 
-        if (_currentLeague == null)
-            throw new InvalidOperationException("No current league set");
+        /// <summary>
+        /// Initialize the dashboard with game state data.
+        /// </summary>
+        public void Initialize(GameState gameState, IGameManager? gameManager = null)
+        {
+            _gameState = gameState ?? throw new ArgumentNullException(nameof(gameState));
+            _currentLeague = gameState.GetCurrentLeague();
+            _gameManager = gameManager;
 
-        RefreshUI();
-    }
+            if (_currentLeague == null)
+                throw new InvalidOperationException("No current league set");
+
+            RefreshUI();
+        }
 
     private void RefreshUI()
     {
@@ -145,9 +148,33 @@ namespace FM100.Views
         MessageBox.Show("Day skipped!", "Progress");
     }
 
-    private void Save_Click(object sender, RoutedEventArgs e)
+    private async void Save_Click(object sender, RoutedEventArgs e)
     {
-        MessageBox.Show("Game saved!", "Save");
+        if (_gameState == null || _gameManager == null)
+        {
+            MessageBox.Show("Cannot save game - game state not initialized.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            return;
+        }
+
+        // Show save dialog
+        var saveDialog = new SaveGameDialog()
+        {
+            Owner = this
+        };
+
+        if (saveDialog.ShowDialog() == true && !string.IsNullOrEmpty(saveDialog.SaveName))
+        {
+            try
+            {
+                MessageBox.Show("Saving game...", "Save Game");
+                await _gameManager.SaveGameAsync(_gameState);
+                MessageBox.Show("Game saved successfully!", "Save Game", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error saving game: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
     }
 
     private void Menu_Click(object sender, RoutedEventArgs e)

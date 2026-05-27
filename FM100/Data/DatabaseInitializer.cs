@@ -41,7 +41,7 @@ public static class DatabaseInitializer
     }
 
     /// <summary>
-    /// Creates the schema for FootballPlayer table.
+    /// Creates the schema for all tables.
     /// </summary>
     private static void CreateTables()
     {
@@ -73,6 +73,78 @@ public static class DatabaseInitializer
 
                 CREATE INDEX idx_player_name ON FootballPlayers(FirstName, LastName);
                 CREATE INDEX idx_player_shirt ON FootballPlayers(ShirtNumber);
+
+                CREATE TABLE Leagues (
+                    Id TEXT PRIMARY KEY,
+                    Season INTEGER NOT NULL,
+                    Division INTEGER NOT NULL,
+                    ClubIds TEXT NOT NULL,
+                    FixtureIds TEXT NOT NULL,
+                    CompletedMatchIds TEXT NOT NULL,
+                    Standings TEXT NOT NULL,
+                    StartDate TEXT NOT NULL,
+                    EndDate TEXT NOT NULL,
+                    CreatedAt TEXT NOT NULL,
+                    UpdatedAt TEXT NOT NULL
+                );
+
+                CREATE INDEX idx_league_season ON Leagues(Season, Division);
+
+                CREATE TABLE Fixtures (
+                    Id TEXT PRIMARY KEY,
+                    LeagueId TEXT NOT NULL,
+                    HomeClubId TEXT NOT NULL,
+                    AwayClubId TEXT NOT NULL,
+                    ScheduledDate TEXT NOT NULL,
+                    MatchWeek INTEGER NOT NULL,
+                    IsPlayed INTEGER NOT NULL,
+                    MatchId TEXT,
+                    CreatedAt TEXT NOT NULL,
+                    UpdatedAt TEXT NOT NULL,
+                    FOREIGN KEY(LeagueId) REFERENCES Leagues(Id)
+                );
+
+                CREATE INDEX idx_fixture_league ON Fixtures(LeagueId, MatchWeek);
+                CREATE INDEX idx_fixture_scheduled ON Fixtures(ScheduledDate);
+                CREATE INDEX idx_fixture_clubs ON Fixtures(HomeClubId, AwayClubId);
+
+                CREATE TABLE Matches (
+                    Id TEXT PRIMARY KEY,
+                    FixtureId TEXT NOT NULL,
+                    HomeClubId TEXT NOT NULL,
+                    AwayClubId TEXT NOT NULL,
+                    HomeGoals INTEGER NOT NULL,
+                    AwayGoals INTEGER NOT NULL,
+                    Status INTEGER NOT NULL,
+                    PlayedAt TEXT NOT NULL,
+                    Events TEXT NOT NULL,
+                    HomePerformanceRating INTEGER NOT NULL,
+                    AwayPerformanceRating INTEGER NOT NULL,
+                    CreatedAt TEXT NOT NULL,
+                    FOREIGN KEY(FixtureId) REFERENCES Fixtures(Id)
+                );
+
+                CREATE INDEX idx_match_fixture ON Matches(FixtureId);
+                CREATE INDEX idx_match_clubs ON Matches(HomeClubId, AwayClubId);
+                CREATE INDEX idx_match_status ON Matches(Status);
+
+                CREATE TABLE GameSaves (
+                    SaveId TEXT PRIMARY KEY,
+                    SaveName TEXT NOT NULL,
+                    PlayerClubId TEXT NOT NULL,
+                    CurrentSeason INTEGER NOT NULL,
+                    CurrentLeagueId TEXT,
+                    Clubs TEXT NOT NULL,
+                    Leagues TEXT NOT NULL,
+                    HallOfFame TEXT NOT NULL,
+                    Difficulty INTEGER NOT NULL,
+                    DaysElapsed INTEGER NOT NULL,
+                    CreatedAt TEXT NOT NULL,
+                    LastSavedAt TEXT NOT NULL
+                );
+
+                CREATE INDEX idx_save_date ON GameSaves(LastSavedAt DESC);
+                CREATE INDEX idx_save_season ON GameSaves(CurrentSeason);
             ";
 
             command.ExecuteNonQuery();

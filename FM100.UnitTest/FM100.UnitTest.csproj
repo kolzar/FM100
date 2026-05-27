@@ -25,6 +25,7 @@
 
   <ItemGroup>
     <Folder Include="Data\Repositories\" />
+    <Folder Include="Integration\" />
   </ItemGroup>
 
 </Project>
