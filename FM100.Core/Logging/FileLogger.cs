@@ -10,7 +10,7 @@ using System.Threading;
 public class FileLogger : IDisposable
 {
     private readonly ILoggerConfiguration _config;
-    private readonly string _logFileName;
+    private string _logFileName;
     private readonly ReaderWriterLockSlim _fileLock;
     private bool _disposed;
 

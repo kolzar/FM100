@@ -25,12 +25,14 @@ public static class DataServiceCollectionExtensions
         services.AddSingleton<FixtureRepository>();
         services.AddSingleton<MatchRepository>();
         services.AddSingleton<GameSaveRepository>();
+        services.AddSingleton<ClubRepository>();
 
         // Map concrete implementations to core-facing interfaces
         services.AddSingleton<ILeagueRepository>(sp => sp.GetRequiredService<LeagueRepository>());
         services.AddSingleton<IFixtureRepository>(sp => sp.GetRequiredService<FixtureRepository>());
         services.AddSingleton<IMatchRepository>(sp => sp.GetRequiredService<MatchRepository>());
         services.AddSingleton<IGameSaveRepository>(sp => sp.GetRequiredService<GameSaveRepository>());
+        services.AddSingleton<IClubRepository>(sp => sp.GetRequiredService<ClubRepository>());
 
         // Register data interfaces where available
         services.AddSingleton<IFootballPlayerRepository, FootballPlayerRepository>();

@@ -1,5 +1,6 @@
 using FM100.Core.GameState;
 using FM100.Core.Management;
+using FM100.Core.Repositories;
 using FM100.Domain.Club;
 using FM100.Domain.League;
 using Microsoft.Extensions.Logging;
@@ -13,6 +14,7 @@ public class GameManager : IGameManager
 {
     private readonly ILeagueManager _leagueManager;
     private readonly ClubGenerator _clubGenerator;
+    private readonly IClubRepository _clubRepository;
     private readonly FM100.Core.Repositories.IGameSaveRepository? _gameSaveRepository;
     private readonly ILogger<GameManager>? _logger;
 
@@ -25,11 +27,13 @@ public class GameManager : IGameManager
     public GameManager(
         ILeagueManager leagueManager,
         ClubGenerator clubGenerator,
+        IClubRepository clubRepository,
         FM100.Core.Repositories.IGameSaveRepository? gameSaveRepository = null,
         ILogger<GameManager>? logger = null)
     {
         _leagueManager = leagueManager ?? throw new ArgumentNullException(nameof(leagueManager));
         _clubGenerator = clubGenerator ?? throw new ArgumentNullException(nameof(clubGenerator));
+        _clubRepository = clubRepository ?? throw new ArgumentNullException(nameof(clubRepository));
         _gameSaveRepository = gameSaveRepository;
         _logger = logger;
     }
@@ -56,6 +60,10 @@ public class GameManager : IGameManager
             }
 
             _logger?.LogInformation("Generated {ClubCount} clubs", clubs.Count);
+
+            // Save all generated clubs to the database
+            await _clubRepository.AddManyAsync(clubs);
+            _logger?.LogInformation("Saved {ClubCount} clubs to database", clubs.Count);
 
             // Find the player's selected club
             var playerClub = clubs.FirstOrDefault(c =>

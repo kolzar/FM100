@@ -38,6 +38,11 @@ public static class DatabaseInitializer
         {
             CreateTables();
         }
+        else
+        {
+            // Database exists, but ensure all required tables exist
+            EnsureTablesExist();
+        }
     }
 
     /// <summary>
@@ -50,8 +55,74 @@ public static class DatabaseInitializer
             connection.Open();
 
             var command = connection.CreateCommand();
-            command.CommandText = @"
-                CREATE TABLE FootballPlayers (
+            command.CommandText = GetCreateTablesSql();
+            command.ExecuteNonQuery();
+        }
+    }
+
+    /// <summary>
+    /// Ensures all required tables exist in the database.
+    /// </summary>
+    private static void EnsureTablesExist()
+    {
+        using (var connection = new SQLiteConnection(GetConnectionString()))
+        {
+            connection.Open();
+
+            var requiredTables = new[] { "Clubs", "FootballPlayers", "Leagues", "Fixtures", "Matches", "GameSaves" };
+            bool needsCreation = false;
+
+            var command = connection.CreateCommand();
+            foreach (var tableName in requiredTables)
+            {
+                command.CommandText = $"SELECT name FROM sqlite_master WHERE type='table' AND name='{tableName}'";
+                var result = command.ExecuteScalar();
+                if (result == null)
+                {
+                    needsCreation = true;
+                    break;
+                }
+            }
+
+            // If any table is missing, create all (using IF NOT EXISTS to avoid errors)
+            if (needsCreation)
+            {
+                command.CommandText = GetCreateTablesSql();
+                command.ExecuteNonQuery();
+            }
+        }
+    }
+
+    /// <summary>
+    /// Gets the SQL for creating all tables.
+    /// </summary>
+    private static string GetCreateTablesSql()
+    {
+        return @"
+                CREATE TABLE IF NOT EXISTS Clubs (
+                    Id TEXT PRIMARY KEY,
+                    Name TEXT NOT NULL,
+                    Abbreviation TEXT NOT NULL,
+                    Division INTEGER NOT NULL,
+                    City TEXT NOT NULL,
+                    StadiumName TEXT NOT NULL,
+                    StadiumCapacity INTEGER NOT NULL,
+                    BudgetInMillions INTEGER NOT NULL,
+                    Reputation INTEGER NOT NULL,
+                    FanSatisfaction INTEGER NOT NULL,
+                    SeasonWins INTEGER NOT NULL,
+                    SeasonDraws INTEGER NOT NULL,
+                    SeasonLosses INTEGER NOT NULL,
+                    GoalsFor INTEGER NOT NULL,
+                    GoalsAgainst INTEGER NOT NULL,
+                    CreatedAt TEXT NOT NULL,
+                    UpdatedAt TEXT NOT NULL
+                );
+
+                CREATE INDEX IF NOT EXISTS idx_club_division ON Clubs(Division);
+                CREATE INDEX IF NOT EXISTS idx_club_name ON Clubs(Name);
+
+                CREATE TABLE IF NOT EXISTS FootballPlayers (
                     Id TEXT PRIMARY KEY,
                     FirstName TEXT NOT NULL,
                     LastName TEXT NOT NULL,
@@ -71,10 +142,10 @@ public static class DatabaseInitializer
                     UpdatedAt TEXT NOT NULL
                 );
 
-                CREATE INDEX idx_player_name ON FootballPlayers(FirstName, LastName);
-                CREATE INDEX idx_player_shirt ON FootballPlayers(ShirtNumber);
+                CREATE INDEX IF NOT EXISTS idx_player_name ON FootballPlayers(FirstName, LastName);
+                CREATE INDEX IF NOT EXISTS idx_player_shirt ON FootballPlayers(ShirtNumber);
 
-                CREATE TABLE Leagues (
+                CREATE TABLE IF NOT EXISTS Leagues (
                     Id TEXT PRIMARY KEY,
                     Season INTEGER NOT NULL,
                     Division INTEGER NOT NULL,
@@ -88,66 +159,49 @@ public static class DatabaseInitializer
                     UpdatedAt TEXT NOT NULL
                 );
 
-                CREATE INDEX idx_league_season ON Leagues(Season, Division);
+                CREATE INDEX IF NOT EXISTS idx_league_season ON Leagues(Season, Division);
 
-                CREATE TABLE Fixtures (
+                CREATE TABLE IF NOT EXISTS Fixtures (
                     Id TEXT PRIMARY KEY,
                     LeagueId TEXT NOT NULL,
                     HomeClubId TEXT NOT NULL,
                     AwayClubId TEXT NOT NULL,
-                    ScheduledDate TEXT NOT NULL,
-                    MatchWeek INTEGER NOT NULL,
-                    IsPlayed INTEGER NOT NULL,
-                    MatchId TEXT,
+                    MatchDate TEXT NOT NULL,
+                    Status INTEGER NOT NULL,
                     CreatedAt TEXT NOT NULL,
-                    UpdatedAt TEXT NOT NULL,
-                    FOREIGN KEY(LeagueId) REFERENCES Leagues(Id)
+                    UpdatedAt TEXT NOT NULL
                 );
 
-                CREATE INDEX idx_fixture_league ON Fixtures(LeagueId, MatchWeek);
-                CREATE INDEX idx_fixture_scheduled ON Fixtures(ScheduledDate);
-                CREATE INDEX idx_fixture_clubs ON Fixtures(HomeClubId, AwayClubId);
+                CREATE INDEX IF NOT EXISTS idx_fixture_league ON Fixtures(LeagueId);
 
-                CREATE TABLE Matches (
+                CREATE TABLE IF NOT EXISTS Matches (
                     Id TEXT PRIMARY KEY,
                     FixtureId TEXT NOT NULL,
                     HomeClubId TEXT NOT NULL,
                     AwayClubId TEXT NOT NULL,
-                    HomeGoals INTEGER NOT NULL,
-                    AwayGoals INTEGER NOT NULL,
+                    HomeScore INTEGER NOT NULL,
+                    AwayScore INTEGER NOT NULL,
                     Status INTEGER NOT NULL,
-                    PlayedAt TEXT NOT NULL,
-                    Events TEXT NOT NULL,
-                    HomePerformanceRating INTEGER NOT NULL,
-                    AwayPerformanceRating INTEGER NOT NULL,
+                    MatchData TEXT NOT NULL,
                     CreatedAt TEXT NOT NULL,
-                    FOREIGN KEY(FixtureId) REFERENCES Fixtures(Id)
+                    UpdatedAt TEXT NOT NULL,
+                    FOREIGN KEY (FixtureId) REFERENCES Fixtures(Id)
                 );
 
-                CREATE INDEX idx_match_fixture ON Matches(FixtureId);
-                CREATE INDEX idx_match_clubs ON Matches(HomeClubId, AwayClubId);
-                CREATE INDEX idx_match_status ON Matches(Status);
+                CREATE INDEX IF NOT EXISTS idx_match_fixture ON Matches(FixtureId);
 
-                CREATE TABLE GameSaves (
-                    SaveId TEXT PRIMARY KEY,
-                    SaveName TEXT NOT NULL,
+                CREATE TABLE IF NOT EXISTS GameSaves (
+                    Id TEXT PRIMARY KEY,
                     PlayerClubId TEXT NOT NULL,
-                    CurrentSeason INTEGER NOT NULL,
-                    CurrentLeagueId TEXT,
-                    Clubs TEXT NOT NULL,
-                    Leagues TEXT NOT NULL,
-                    HallOfFame TEXT NOT NULL,
-                    Difficulty INTEGER NOT NULL,
-                    DaysElapsed INTEGER NOT NULL,
+                    Season INTEGER NOT NULL,
+                    Budget INTEGER NOT NULL,
+                    SaveName TEXT NOT NULL,
+                    SaveData TEXT NOT NULL,
                     CreatedAt TEXT NOT NULL,
-                    LastSavedAt TEXT NOT NULL
+                    UpdatedAt TEXT NOT NULL
                 );
 
-                CREATE INDEX idx_save_date ON GameSaves(LastSavedAt DESC);
-                CREATE INDEX idx_save_season ON GameSaves(CurrentSeason);
+                CREATE INDEX IF NOT EXISTS idx_gamesave_club ON GameSaves(PlayerClubId);
             ";
-
-            command.ExecuteNonQuery();
-        }
     }
 }

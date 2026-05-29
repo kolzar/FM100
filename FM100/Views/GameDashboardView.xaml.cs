@@ -4,6 +4,7 @@ using FM100.Core.GameState;
 using FM100.Core.Management;
 using FM100.Domain.Club;
 using FM100.Domain.League;
+using FM100.Core.Logging;
 
 namespace FM100.Views
 {
@@ -152,9 +153,12 @@ namespace FM100.Views
     {
         if (_gameState == null || _gameManager == null)
         {
+            Logger.Error("GameDashboardView", "Cannot save game - game state not initialized");
             MessageBox.Show("Cannot save game - game state not initialized.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             return;
         }
+
+        Logger.Information("GameDashboardView", "Save operation initiated");
 
         // Show save dialog
         var saveDialog = new SaveGameDialog()
@@ -166,14 +170,21 @@ namespace FM100.Views
         {
             try
             {
+                Logger.Information("GameDashboardView", $"Saving game with name: {saveDialog.SaveName}");
                 MessageBox.Show("Saving game...", "Save Game");
                 await _gameManager.SaveGameAsync(_gameState);
+                Logger.Information("GameDashboardView", "Game saved successfully");
                 MessageBox.Show("Game saved successfully!", "Save Game", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
+                Logger.Error("GameDashboardView", "Error saving game", ex);
                 MessageBox.Show($"Error saving game: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
+        }
+        else
+        {
+            Logger.Information("GameDashboardView", "Save operation cancelled by user");
         }
     }
 

@@ -3,8 +3,10 @@ using System.Windows.Controls;
 using System.Windows.Threading;
 using FM100.Core.Management;
 using FM100.Core.GameState;
+using FM100.Core.Repositories;
 using FM100.Domain.Club;
 using FM100.Views;
+using FM100.Core.Logging;
 
 namespace FM100
 {
@@ -20,15 +22,22 @@ namespace FM100
         public MainWindow()
         {
             InitializeComponent();
+            Logger.Information("MainWindow", "MainWindow initialized");
         }
 
         protected override void OnContentRendered(EventArgs e)
         {
             base.OnContentRendered(e);
+            Logger.Information("MainWindow", "MainWindow content rendered");
 
             // Get GameManager from DI
             var app = Application.Current as App;
             _gameManager = app?.GetServiceProvider().GetService(typeof(IGameManager)) as IGameManager;
+
+            if (_gameManager == null)
+            {
+                Logger.Error("MainWindow", "Failed to resolve IGameManager from DI container");
+            }
 
             // Defer the content assignment to allow the visual tree to fully initialize
             Dispatcher.BeginInvoke(new Action(() => ShowSplashScreen()), 
@@ -54,27 +63,44 @@ namespace FM100
 
         private void ShowMainMenu()
         {
+            Logger.Information("MainWindow", "Showing main menu");
             var menuView = new MenuView();
 
             // Wire up menu button events
             if (menuView.FindName("NewGameButton") is Button newGameBtn)
             {
-                newGameBtn.Click += (s, e) => ShowClubSelection();
+                newGameBtn.Click += (s, e) => 
+                {
+                    Logger.Information("MainWindow", "New Game button clicked");
+                    ShowClubSelection();
+                };
             }
 
             if (menuView.FindName("LoadGameButton") is Button loadGameBtn)
             {
-                loadGameBtn.Click += async (s, e) => await ShowLoadGameDialog();
+                loadGameBtn.Click += async (s, e) => 
+                {
+                    Logger.Information("MainWindow", "Load Game button clicked");
+                    await ShowLoadGameDialog();
+                };
             }
 
             if (menuView.FindName("SettingsButton") is Button settingsBtn)
             {
-                settingsBtn.Click += (s, e) => MessageBox.Show("Settings coming soon!", "Settings");
+                settingsBtn.Click += (s, e) => 
+                {
+                    Logger.Information("MainWindow", "Settings button clicked");
+                    MessageBox.Show("Settings coming soon!", "Settings");
+                };
             }
 
             if (menuView.FindName("ExitButton") is Button exitBtn)
             {
-                exitBtn.Click += (s, e) => Application.Current.Shutdown();
+                exitBtn.Click += (s, e) => 
+                {
+                    Logger.Information("MainWindow", "Exit button clicked, shutting down");
+                    Application.Current.Shutdown();
+                };
             }
 
             ViewHost.Content = menuView;
@@ -82,42 +108,70 @@ namespace FM100
 
         private void ShowClubSelection()
         {
-            var clubSelectionView = new ClubSelectionView();
+            Logger.Information("MainWindow", "Showing club selection");
+
+            var app = Application.Current as App;
+            var clubRepository = app?.GetServiceProvider().GetService(typeof(IClubRepository)) as IClubRepository;
+
+            if (clubRepository == null)
+            {
+                Logger.Error("MainWindow", "Failed to resolve IClubRepository from DI container");
+                MessageBox.Show("Failed to load clubs repository!", "Error");
+                return;
+            }
+
+            var clubSelectionView = new ClubSelectionView(clubRepository);
             clubSelectionView.GameStarted += async (s, e) =>
             {
-                await StartNewGame(e.SelectedClub, e.Difficulty);
+                if (e.SelectedClub == null || e.Difficulty == -1)
+                {
+                    // Go back to menu
+                    ShowMainMenu();
+                }
+                else
+                {
+                    Logger.Information("MainWindow", $"Club selected: {e.SelectedClub.Name}, Difficulty: {e.Difficulty}");
+                    await StartNewGame(e.SelectedClub, e.Difficulty);
+                }
             };
-            clubSelectionView.Show();
+            ViewHost.Content = clubSelectionView;
         }
 
         private async Task StartNewGame(Club selectedClub, int difficulty)
         {
             try
             {
+                Logger.Information("MainWindow", $"Starting new game: {selectedClub.Name}");
                 MessageBox.Show("Initializing game world...", "Starting Game");
 
                 if (_gameManager == null)
                 {
+                    Logger.Error("MainWindow", "Game manager not initialized");
                     MessageBox.Show("Game manager not initialized!", "Error");
                     return;
                 }
 
                 // Create new game state
+                Logger.Information("MainWindow", "Creating new game state");
                 _currentGameState = await _gameManager.StartNewGameAsync(selectedClub.Name, selectedClub.Division, difficulty);
+                Logger.Information("MainWindow", "New game state created successfully");
 
                 // Show game dashboard
                 ShowGameDashboard();
             }
             catch (Exception ex)
             {
+                Logger.Error("MainWindow", "Failed to start game", ex);
                 MessageBox.Show($"Failed to start game: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
         private void ShowGameDashboard()
         {
+            Logger.Information("MainWindow", "Showing game dashboard");
             if (_currentGameState == null)
             {
+                Logger.Error("MainWindow", "No active game state");
                 MessageBox.Show("No active game state!", "Error");
                 return;
             }
@@ -186,8 +240,11 @@ namespace FM100
 
         private async Task ShowLoadGameDialog()
         {
+            Logger.Information("MainWindow", "Showing load game dialog");
+
             if (_gameManager == null)
             {
+                Logger.Error("MainWindow", "Game manager not initialized");
                 MessageBox.Show("Game manager not initialized!", "Error");
                 return;
             }
@@ -199,6 +256,8 @@ namespace FM100
 
             if (loadDialog.ShowDialog() == true && loadDialog.SelectedSaveId.HasValue)
             {
+                Logger.Information("MainWindow", $"Save selected for loading: {loadDialog.SelectedSaveId}");
+
                 // Show confirmation
                 var confirmResult = MessageBox.Show(
                     "Load this saved game?",
@@ -210,6 +269,14 @@ namespace FM100
                 {
                     await LoadGame(loadDialog.SelectedSaveId.Value);
                 }
+                else
+                {
+                    Logger.Information("MainWindow", "User declined to load game");
+                }
+            }
+            else
+            {
+                Logger.Information("MainWindow", "Load dialog closed without selection");
             }
         }
 
@@ -217,8 +284,11 @@ namespace FM100
         {
             try
             {
+                Logger.Information("MainWindow", $"Loading game: {saveId}");
+
                 if (_gameManager == null)
                 {
+                    Logger.Error("MainWindow", "Game manager not initialized");
                     MessageBox.Show("Game manager not initialized!", "Error");
                     return;
                 }
@@ -229,15 +299,19 @@ namespace FM100
 
                 if (_currentGameState == null)
                 {
+                    Logger.Error("MainWindow", "Failed to load game state");
                     MessageBox.Show("Failed to load game state!", "Error");
                     return;
                 }
+
+                Logger.Information("MainWindow", "Game loaded successfully");
 
                 // Show the loaded game dashboard
                 ShowGameDashboard();
             }
             catch (Exception ex)
             {
+                Logger.Error("MainWindow", "Error loading game", ex);
                 MessageBox.Show($"Error loading game: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
