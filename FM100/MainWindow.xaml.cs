@@ -131,18 +131,35 @@ namespace FM100
                 else
                 {
                     Logger.Information("MainWindow", $"Club selected: {e.SelectedClub.Name}, Difficulty: {e.Difficulty}");
-                    await StartNewGame(e.SelectedClub, e.Difficulty);
+                    ShowCoachCreation(e.SelectedClub, e.Difficulty);
                 }
             };
             ViewHost.Content = clubSelectionView;
         }
 
-        private async Task StartNewGame(Club selectedClub, int difficulty)
+        private void ShowCoachCreation(Club selectedClub, int difficulty)
+        {
+            Logger.Information("MainWindow", "Showing coach creation screen");
+
+            var coachCreationView = new CoachCreationView();
+            coachCreationView.CoachCreated += async (s, e) =>
+            {
+                Logger.Information("MainWindow", $"Coach created: {e.CoachName}");
+                await StartNewGame(selectedClub, difficulty, e.CoachName, e.PreferredFormation);
+            };
+            coachCreationView.Cancelled += (s, e) =>
+            {
+                Logger.Information("MainWindow", "Coach creation cancelled, returning to club selection");
+                ShowClubSelection();
+            };
+            ViewHost.Content = coachCreationView;
+        }
+
+        private async Task StartNewGame(Club selectedClub, int difficulty, string coachName = "Manager", string preferredFormation = "4-3-3")
         {
             try
             {
-                Logger.Information("MainWindow", $"Starting new game: {selectedClub.Name}");
-                MessageBox.Show("Initializing game world...", "Starting Game");
+                Logger.Information("MainWindow", $"Starting new game: {selectedClub.Name} with coach {coachName}");
 
                 if (_gameManager == null)
                 {
@@ -154,7 +171,7 @@ namespace FM100
                 // Create new game state
                 Logger.Information("MainWindow", "Creating new game state");
                 _currentGameState = await _gameManager.StartNewGameAsync(selectedClub.Name, selectedClub.Division, difficulty);
-                Logger.Information("MainWindow", "New game state created successfully");
+                Logger.Information("MainWindow", $"New game state created successfully with coach: {coachName}, Formation: {preferredFormation}");
 
                 // Show game dashboard
                 ShowGameDashboard();
@@ -235,7 +252,7 @@ namespace FM100
 
         private void ShowGameContent(string section)
         {
-            MessageBox.Show($"Section: {section} - Coming soon!", "Feature");
+            Logger.Information("MainWindow", $"Show game content: {section} - Coming soon");
         }
 
         private async Task ShowLoadGameDialog()

@@ -1,8 +1,10 @@
 using System.Windows;
+using System.Windows.Controls;
+using FM100.Core.Logging;
 
 namespace FM100.Views;
 
-public partial class MainMenuView : Window
+public partial class MainMenuView : UserControl
 {
     public MainMenuView()
     {
@@ -11,30 +13,27 @@ public partial class MainMenuView : Window
 
     private void NewGame_Click(object sender, RoutedEventArgs e)
     {
-        // TODO: Navigate to club selection screen
-        MessageBox.Show("Starting new game...", "New Game");
+        Logger.Information("MainMenuView", "New Game button clicked");
     }
 
     private void LoadGame_Click(object sender, RoutedEventArgs e)
     {
-        // TODO: Navigate to load game screen
-        MessageBox.Show("Loading saved games...", "Load Game");
+        Logger.Information("MainMenuView", "Load Game button clicked");
     }
 
     private void Settings_Click(object sender, RoutedEventArgs e)
     {
-        // TODO: Navigate to settings screen
-        MessageBox.Show("Opening settings...", "Settings");
+        Logger.Information("MainMenuView", "Settings button clicked");
     }
 
     private void HallOfFame_Click(object sender, RoutedEventArgs e)
     {
-        // TODO: Navigate to hall of fame screen
-        MessageBox.Show("Opening Hall of Fame...", "Hall of Fame");
+        Logger.Information("MainMenuView", "Hall of Fame button clicked");
     }
 
     private void Exit_Click(object sender, RoutedEventArgs e)
     {
+        Logger.Information("MainMenuView", "Exit button clicked");
         Application.Current.Shutdown();
     }
 }

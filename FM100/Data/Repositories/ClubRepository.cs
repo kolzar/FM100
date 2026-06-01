@@ -22,11 +22,11 @@ public class ClubRepository : IClubRepository
         using (var connection = new SQLiteConnection(_connectionString))
         {
             await connection.OpenAsync();
-            var club = await connection.QuerySingleOrDefaultAsync<dynamic>(
+            var clubDto = await connection.QuerySingleOrDefaultAsync<ClubDto>(
                 "SELECT * FROM Clubs WHERE Id = @Id",
                 new { Id = id.ToString() });
 
-            return club != null ? MapToDomain(club) : null;
+            return clubDto != null ? MapToDomain(clubDto) : null;
         }
     }
 
@@ -37,8 +37,8 @@ public class ClubRepository : IClubRepository
             await connection.OpenAsync();
             try
             {
-                var clubs = await connection.QueryAsync<dynamic>("SELECT * FROM Clubs");
-                return clubs.Select(MapToDomain).ToList();
+                var clubDtos = await connection.QueryAsync<ClubDto>("SELECT * FROM Clubs");
+                return clubDtos.Select(MapToDomain).ToList();
             }
             catch
             {
@@ -53,11 +53,11 @@ public class ClubRepository : IClubRepository
         using (var connection = new SQLiteConnection(_connectionString))
         {
             await connection.OpenAsync();
-            var clubs = await connection.QueryAsync<dynamic>(
+            var clubDtos = await connection.QueryAsync<ClubDto>(
                 "SELECT * FROM Clubs WHERE Division = @Division",
                 new { Division = (int)division });
 
-            return clubs.Select(MapToDomain).ToList();
+            return clubDtos.Select(MapToDomain).ToList();
         }
     }
 
@@ -198,47 +198,38 @@ public class ClubRepository : IClubRepository
         }
     }
 
-    private static Club MapToDomain(dynamic dbClub)
+    private static Club MapToDomain(ClubDto dbClub)
     {
-        try
+        if (string.IsNullOrEmpty(dbClub.Id) || string.IsNullOrEmpty(dbClub.Name))
         {
-            Guid.TryParse(dbClub.Id?.ToString(), out Guid id);
+            throw new InvalidOperationException("Invalid club data from database: Id or Name is null/empty");
+        }
 
-            return new Club
-            {
-                Id = id != Guid.Empty ? id : Guid.NewGuid(),
-                Name = dbClub.Name ?? string.Empty,
-                Abbreviation = dbClub.Abbreviation ?? string.Empty,
-                Division = (Division)(dbClub.Division ?? 1),
-                City = dbClub.City ?? string.Empty,
-                BudgetInMillions = dbClub.BudgetInMillions ?? 50,
-                Reputation = dbClub.Reputation ?? 10,
-                FanSatisfaction = dbClub.FanSatisfaction ?? 10,
-                SeasonWins = dbClub.SeasonWins ?? 0,
-                SeasonDraws = dbClub.SeasonDraws ?? 0,
-                SeasonLosses = dbClub.SeasonLosses ?? 0,
-                GoalsFor = dbClub.GoalsFor ?? 0,
-                GoalsAgainst = dbClub.GoalsAgainst ?? 0,
-                Stadium = new Stadium
-                {
-                    Name = dbClub.StadiumName ?? "Unknown Stadium",
-                    Capacity = dbClub.StadiumCapacity ?? 30000
-                }
-            };
-        }
-        catch (Exception ex)
+        if (!Guid.TryParse(dbClub.Id, out var id))
         {
-            // If mapping fails, return a default empty club
-            System.Diagnostics.Debug.WriteLine($"Error mapping Club from database: {ex.Message}");
-            return new Club
-            {
-                Id = Guid.NewGuid(),
-                Name = "Unknown",
-                Abbreviation = "UNK",
-                Division = Division.SerieA,
-                City = "Unknown",
-                Stadium = new Stadium { Name = "Unknown", Capacity = 30000 }
-            };
+            throw new InvalidOperationException($"Invalid club ID format: {dbClub.Id}");
         }
+
+        return new Club
+        {
+            Id = id,
+            Name = dbClub.Name,
+            Abbreviation = dbClub.Abbreviation,
+            Division = (Division)dbClub.Division,
+            City = dbClub.City,
+            BudgetInMillions = dbClub.BudgetInMillions,
+            Reputation = dbClub.Reputation,
+            FanSatisfaction = dbClub.FanSatisfaction,
+            SeasonWins = dbClub.SeasonWins,
+            SeasonDraws = dbClub.SeasonDraws,
+            SeasonLosses = dbClub.SeasonLosses,
+            GoalsFor = dbClub.GoalsFor,
+            GoalsAgainst = dbClub.GoalsAgainst,
+            Stadium = new Stadium
+            {
+                Name = dbClub.StadiumName,
+                Capacity = dbClub.StadiumCapacity
+            }
+        };
     }
 }

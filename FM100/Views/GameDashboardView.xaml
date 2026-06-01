@@ -1,244 +1,102 @@
-<Window x:Class="FM100.Views.GameDashboardView"
+<UserControl x:Class="FM100.Views.GameDashboardView"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Game Dashboard" 
         Height="800" Width="1200"
-        WindowStartupLocation="CenterScreen"
-        Background="#1e1e1e"
+        Background="#0a0e27"
         FontFamily="Segoe UI">
     <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
-        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="220"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
 
-        <!-- Header with Season & Club Info -->
-        <Border Grid.Row="0" Background="#2d2d2d" BorderBrush="#444444" BorderThickness="0,0,0,1">
-            <Grid Margin="20">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-
-                <!-- Club & Season Info -->
-                <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                    <TextBlock x:Name="ClubNameText" Text="Your Club" FontSize="24" FontWeight="Bold" Foreground="#00d4ff"/>
-                    <TextBlock FontSize="12" Foreground="#888888">
-                        <Run Text="Season "/>
-                        <Run x:Name="SeasonText" Text="1"/>
-                        <Run Text=" | League Position: "/>
-                        <Run x:Name="PositionText" Text="--"/>
-                        <Run Text=" | Points: "/>
-                        <Run x:Name="PointsText" Text="0"/>
-                    </TextBlock>
-                </StackPanel>
-
-                <!-- Quick Stats -->
-                <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="30,0,0,0">
-                    <TextBlock FontSize="11" Foreground="#888888">
-                        <Run Text="W-D-L: "/>
-                        <Run x:Name="RecordText" Text="0-0-0"/>
-                        <Run Text=" | GD: "/>
-                        <Run x:Name="GoalDiffText" Text="0"/>
-                    </TextBlock>
-                    <TextBlock FontSize="11" Foreground="#888888" Margin="0,3,0,0">
-                        <Run Text="Morale: "/>
-                        <Run x:Name="MoraleText" Text="75%"/>
-                        <Run Text=" | Budget: €"/>
-                        <Run x:Name="BudgetText" Text="0"/>
-                        <Run Text="M"/>
-                    </TextBlock>
-                </StackPanel>
-
-                <!-- Quick Actions -->
-                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                    <Button Content="💾 SAVE" Height="35" Width="80" FontSize="11" FontWeight="Bold" 
-                            Background="#666666" Foreground="White" Cursor="Hand" Click="Save_Click" Margin="0,0,5,0"/>
-                    <Button Content="⚙️ MENU" Height="35" Width="80" FontSize="11" FontWeight="Bold" 
-                            Background="#666666" Foreground="White" Cursor="Hand" Click="Menu_Click"/>
-                </StackPanel>
-            </Grid>
+        <!-- LEFT SIDEBAR - BUTTONS -->
+        <Border Grid.Column="0" Background="#1a1f3a" BorderBrush="#2d3561" BorderThickness="0,0,1,0">
+            <StackPanel Margin="0" VerticalAlignment="Top">
+                <Button x:Name="DashboardButton" Content="📊 DASHBOARD" Height="50" Foreground="White" Background="#00d4ff" FontSize="12" FontWeight="Bold" Cursor="Hand" Click="DashboardBtn_Click" Margin="0"/>
+                <Button x:Name="StandingsButton" Content="🏆 STANDINGS" Height="50" Foreground="White" Background="#4a9eff" FontSize="12" FontWeight="Bold" Cursor="Hand" Click="StandingsBtn_Click" Margin="0"/>
+                <Button x:Name="FixturesButton" Content="📅 FIXTURES" Height="50" Foreground="White" Background="#4a9eff" FontSize="12" FontWeight="Bold" Cursor="Hand" Click="FixturesBtn_Click" Margin="0"/>
+                <Button x:Name="ResultsButton" Content="✅ RESULTS" Height="50" Foreground="White" Background="#4a9eff" FontSize="12" FontWeight="Bold" Cursor="Hand" Click="ResultsBtn_Click" Margin="0"/>
+                <Button x:Name="SquadButton" Content="👥 SQUAD" Height="50" Foreground="White" Background="#4a9eff" FontSize="12" FontWeight="Bold" Cursor="Hand" Click="SquadBtn_Click" Margin="0"/>
+                <Button x:Name="SaveButton" Content="💾 SAVE" Height="50" Foreground="White" Background="#666666" FontSize="12" FontWeight="Bold" Cursor="Hand" Click="Save_Click" Margin="0"/>
+                <Button x:Name="MenuButton" Content="🏠 MENU" Height="50" Foreground="White" Background="#cc3333" FontSize="12" FontWeight="Bold" Cursor="Hand" Click="Menu_Click" Margin="0"/>
+            </StackPanel>
         </Border>
 
-        <!-- Main Content -->
-        <Grid Grid.Row="1" Margin="10">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="2*"/>
-                <ColumnDefinition Width="10"/>
-                <ColumnDefinition Width="*"/>
-            </Grid.ColumnDefinitions>
+        <!-- RIGHT CONTENT -->
+        <Border Grid.Column="1" Background="#0a0e27">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel Margin="20">
+                    <!-- DASHBOARD CONTENT -->
+                    <Border x:Name="DashboardContent" Visibility="Visible" Background="#1a1f3a" Padding="20" CornerRadius="5" Margin="0,0,0,20">
+                        <StackPanel>
+                            <TextBlock Text="GAME DASHBOARD" FontSize="20" FontWeight="Bold" Foreground="#00d4ff" Margin="0,0,0,15"/>
+                            <TextBlock FontSize="14" FontWeight="Bold" Foreground="#ffffff" Margin="0,0,0,5">
+                                <Run Text="Club: "/>
+                                <Run x:Name="ClubNameText" Text="Your Club" Foreground="#00d4ff"/>
+                            </TextBlock>
+                            <TextBlock FontSize="12" Foreground="#b0b0b0" Margin="0,0,0,10">
+                                <Run Text="Season: "/>
+                                <Run x:Name="SeasonText" Text="1" Foreground="#ffffff"/>
+                                <Run Text=" | Position: "/>
+                                <Run x:Name="PositionText" Text="--" Foreground="#ffffff"/>
+                                <Run Text=" | Points: "/>
+                                <Run x:Name="PointsText" Text="0" Foreground="#ffffff"/>
+                            </TextBlock>
+                            <TextBlock FontSize="12" Foreground="#b0b0b0" Margin="0,0,0,10">
+                                <Run Text="Record: "/>
+                                <Run x:Name="RecordText" Text="0-0-0" Foreground="#ffffff"/>
+                                <Run Text=" | Goal Difference: "/>
+                                <Run x:Name="GoalDiffText" Text="0" Foreground="#ffffff"/>
+                            </TextBlock>
+                            <TextBlock FontSize="12" Foreground="#b0b0b0" Margin="0,0,0,10">
+                                <Run Text="Morale: "/>
+                                <Run x:Name="MoraleText" Text="75%" Foreground="#00ff00"/>
+                                <Run Text=" | Budget: €"/>
+                                <Run x:Name="BudgetText" Text="0" Foreground="#ffff00"/>
+                                <Run Text="M"/>
+                            </TextBlock>
+                        </StackPanel>
+                    </Border>
 
-            <!-- Left: Fixtures & Standings -->
-            <Grid Grid.Column="0">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="*"/>
-                    <RowDefinition Height="10"/>
-                    <RowDefinition Height="*"/>
-                </Grid.RowDefinitions>
+                    <!-- STANDINGS CONTENT -->
+                    <Border x:Name="StandingsContent" Visibility="Collapsed" Background="#1a1f3a" Padding="20" CornerRadius="5" Margin="0,0,0,20">
+                        <StackPanel>
+                            <TextBlock Text="LEAGUE STANDINGS" FontSize="16" FontWeight="Bold" Foreground="#00d4ff" Margin="0,0,0,15"/>
+                            <ListBox x:Name="StandingsList" Background="#0a0e27" Foreground="#ffffff" Height="400" BorderThickness="0"/>
+                        </StackPanel>
+                    </Border>
 
-                <!-- Next Fixtures -->
-                <Border Grid.Row="0" Background="#2a2a2a" BorderBrush="#444444" BorderThickness="1">
-                    <Grid>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="*"/>
-                        </Grid.RowDefinitions>
+                    <!-- FIXTURES CONTENT -->
+                    <Border x:Name="FixturesContent" Visibility="Collapsed" Background="#1a1f3a" Padding="20" CornerRadius="5" Margin="0,0,0,20">
+                        <StackPanel>
+                            <TextBlock Text="UPCOMING FIXTURES" FontSize="16" FontWeight="Bold" Foreground="#00d4ff" Margin="0,0,0,15"/>
+                            <ListBox x:Name="FixturesList" Background="#0a0e27" Foreground="#ffffff" Height="400" BorderThickness="0"/>
+                        </StackPanel>
+                    </Border>
 
-                        <Border Grid.Row="0" Background="#2d2d2d" Padding="15">
-                            <TextBlock Text="📅 Upcoming Fixtures" FontSize="14" FontWeight="Bold" Foreground="#00d4ff"/>
-                        </Border>
+                    <!-- RESULTS CONTENT -->
+                    <Border x:Name="ResultsContent" Visibility="Collapsed" Background="#1a1f3a" Padding="20" CornerRadius="5" Margin="0,0,0,20">
+                        <StackPanel>
+                            <TextBlock Text="RECENT RESULTS" FontSize="16" FontWeight="Bold" Foreground="#00d4ff" Margin="0,0,0,15"/>
+                            <ListBox x:Name="ResultsList" Background="#0a0e27" Foreground="#ffffff" Height="400" BorderThickness="0"/>
+                        </StackPanel>
+                    </Border>
 
-                        <ListBox Grid.Row="1" x:Name="FixturesListBox" Background="#2a2a2a" 
-                                 Foreground="White" BorderThickness="0"
-                                 ItemTemplate="{StaticResource FixtureItemTemplate}">
-                        </ListBox>
-                    </Grid>
-                </Border>
+                    <!-- SQUAD CONTENT -->
+                    <Border x:Name="SquadContent" Visibility="Collapsed" Background="#1a1f3a" Padding="20" CornerRadius="5" Margin="0,0,0,20">
+                        <StackPanel>
+                            <TextBlock Text="YOUR SQUAD" FontSize="16" FontWeight="Bold" Foreground="#00d4ff" Margin="0,0,0,15"/>
+                            <TextBlock Text="Squad management coming soon!" Foreground="#b0b0b0"/>
+                        </StackPanel>
+                    </Border>
 
-                <!-- Standings -->
-                <Border Grid.Row="2" Background="#2a2a2a" BorderBrush="#444444" BorderThickness="1">
-                    <Grid>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="*"/>
-                        </Grid.RowDefinitions>
-
-                        <Border Grid.Row="0" Background="#2d2d2d" Padding="15">
-                            <TextBlock Text="🏆 League Standings (Top 5)" FontSize="14" FontWeight="Bold" Foreground="#ffd700"/>
-                        </Border>
-
-                        <DataGrid Grid.Row="1" x:Name="StandingsGrid" Background="#2a2a2a" 
-                                  Foreground="White" BorderThickness="0"
-                                  CanUserAddRows="False" CanUserDeleteRows="False" CanUserReorderColumns="False"
-                                  IsReadOnly="True" HeadersVisibility="Column">
-                            <DataGrid.ColumnHeaderStyle>
-                                <Style TargetType="DataGridColumnHeader">
-                                    <Setter Property="Background" Value="#2d2d2d"/>
-                                    <Setter Property="Foreground" Value="#888888"/>
-                                    <Setter Property="BorderBrush" Value="#444444"/>
-                                    <Setter Property="Padding" Value="10,5"/>
-                                </Style>
-                            </DataGrid.ColumnHeaderStyle>
-                            <DataGrid.Columns>
-                                <DataGridTextColumn Header="Pos" Binding="{Binding Position}" Width="40"/>
-                                <DataGridTextColumn Header="Club" Binding="{Binding ClubName}" Width="*"/>
-                                <DataGridTextColumn Header="Pts" Binding="{Binding Points}" Width="40"/>
-                                <DataGridTextColumn Header="W-D-L" Binding="{Binding Record}" Width="60"/>
-                                <DataGridTextColumn Header="GD" Binding="{Binding GoalDiff}" Width="50"/>
-                            </DataGrid.Columns>
-                        </DataGrid>
-                    </Grid>
-                </Border>
-            </Grid>
-
-            <!-- Right: Quick Actions & Recent Results -->
-            <Grid Grid.Column="2">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="10"/>
-                    <RowDefinition Height="*"/>
-                </Grid.RowDefinitions>
-
-                <!-- Action Buttons -->
-                <Border Grid.Row="0" Background="#2a2a2a" BorderBrush="#444444" BorderThickness="1" Padding="15">
-                    <StackPanel>
-                        <Button Content="⚽ PLAY NEXT MATCH" Height="40" FontSize="12" FontWeight="Bold"
-                                Background="#00d4ff" Foreground="#000000" Cursor="Hand" Click="PlayMatch_Click" Margin="0,0,0,8"/>
-
-                        <Button Content="📋 VIEW SQUAD" Height="35" FontSize="11" FontWeight="Bold"
-                                Background="#4a9eff" Foreground="White" Cursor="Hand" Click="ViewSquad_Click" Margin="0,0,0,8"/>
-
-                        <Button Content="🎯 TACTICS" Height="35" FontSize="11" FontWeight="Bold"
-                                Background="#4a9eff" Foreground="White" Cursor="Hand" Click="SetTactics_Click" Margin="0,0,0,8"/>
-
-                        <Button Content="💰 FINANCES" Height="35" FontSize="11" FontWeight="Bold"
-                                Background="#4a9eff" Foreground="White" Cursor="Hand" Click="ViewFinances_Click" Margin="0,0,0,8"/>
-
-                        <Button Content="🔄 SKIP DAY" Height="35" FontSize="11" FontWeight="Bold"
-                                Background="#666666" Foreground="White" Cursor="Hand" Click="SkipDay_Click"/>
-                    </StackPanel>
-                </Border>
-
-                <!-- Recent Results -->
-                <Border Grid.Row="2" Background="#2a2a2a" BorderBrush="#444444" BorderThickness="1">
-                    <Grid>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="*"/>
-                        </Grid.RowDefinitions>
-
-                        <Border Grid.Row="0" Background="#2d2d2d" Padding="15">
-                            <TextBlock Text="📊 Recent Results" FontSize="14" FontWeight="Bold" Foreground="#888888"/>
-                        </Border>
-
-                        <ListBox Grid.Row="1" x:Name="ResultsListBox" Background="#2a2a2a" 
-                                 Foreground="White" BorderThickness="0"
-                                 ItemTemplate="{StaticResource ResultItemTemplate}">
-                        </ListBox>
-                    </Grid>
-                </Border>
-            </Grid>
-        </Grid>
-
-        <!-- Footer -->
-        <Border Grid.Row="2" Background="#2d2d2d" Padding="15">
-            <TextBlock Text="💡 Tip: Play matches to earn points and climb the league standings!" 
-                       FontSize="11" Foreground="#666666" TextAlignment="Center"/>
+                    <!-- TIPS -->
+                    <Border Background="#2a2f4a" Padding="15" CornerRadius="5">
+                        <TextBlock Text="💡 Tip: Click buttons on the left to navigate!" Foreground="#b0b0b0" FontSize="11" TextWrapping="Wrap"/>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
         </Border>
     </Grid>
-
-    <!-- Data Templates -->
-    <Window.Resources>
-        <!-- Fixture Template -->
-        <DataTemplate x:Key="FixtureItemTemplate">
-            <Border Background="#1e1e1e" Padding="12" BorderBrush="#333333" BorderThickness="0,0,0,1">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
-
-                    <StackPanel Grid.Column="0">
-                        <TextBlock FontSize="12" FontWeight="Bold" Foreground="#00d4ff">
-                            <Run Text="{Binding HomeClubName}"/>
-                            <Run Text=" vs "/>
-                            <Run Text="{Binding AwayClubName}"/>
-                        </TextBlock>
-                        <TextBlock FontSize="10" Foreground="#888888" Margin="0,3,0,0">
-                            <Run Text="Week "/>
-                            <Run Text="{Binding MatchWeek}"/>
-                            <Run Text=" • "/>
-                            <Run Text="{Binding ScheduledDate, StringFormat=d}"/>
-                        </TextBlock>
-                    </StackPanel>
-
-                    <Button Grid.Column="1" Content="PLAY" Height="28" Width="55" 
-                            FontSize="10" FontWeight="Bold" Background="#00d4ff" Foreground="#000000"
-                            Cursor="Hand" Click="PlayFixture_Click" VerticalAlignment="Center"/>
-                </Grid>
-            </Border>
-        </DataTemplate>
-
-        <!-- Result Template -->
-        <DataTemplate x:Key="ResultItemTemplate">
-            <Border Background="#1e1e1e" Padding="12" BorderBrush="#333333" BorderThickness="0,0,0,1">
-                <StackPanel>
-                    <TextBlock FontSize="11" FontWeight="Bold" Foreground="White">
-                        <Run Text="{Binding HomeClubName}"/>
-                        <Run Text=" "/>
-                        <Run Text="{Binding HomeGoals}" Foreground="#00d4ff" FontWeight="Bold"/>
-                        <Run Text="-"/>
-                        <Run Text="{Binding AwayGoals}" Foreground="#00d4ff" FontWeight="Bold"/>
-                        <Run Text=" "/>
-                        <Run Text="{Binding AwayClubName}"/>
-                    </TextBlock>
-                    <TextBlock FontSize="9" Foreground="#888888" Margin="0,2,0,0">
-                        <Run Text="{Binding PlayedDate, StringFormat=g}"/>
-                    </TextBlock>
-                </StackPanel>
-            </Border>
-        </DataTemplate>
-    </Window.Resources>
-</Window>
+</UserControl>

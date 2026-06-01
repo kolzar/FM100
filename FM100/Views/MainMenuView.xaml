@@ -1,9 +1,7 @@
-<Window x:Class="FM100.Views.MainMenuView"
+<UserControl x:Class="FM100.Views.MainMenuView"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Football Manager Master League" 
         Height="600" Width="900"
-        WindowStartupLocation="CenterScreen"
         Background="#1e1e1e"
         FontFamily="Segoe UI">
     <Grid>
@@ -95,4 +93,4 @@
                        Margin="0,40,0,0"/>
         </StackPanel>
     </Grid>
-</Window>
+</UserControl>
