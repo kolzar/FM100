@@ -24,8 +24,8 @@ public class FixtureRepository : FM100.Core.Repositories.IFixtureRepository
 
             var sql = @"
                 INSERT INTO Fixtures 
-                (Id, LeagueId, HomeClubId, AwayClubId, ScheduledDate, MatchWeek, IsPlayed, MatchId, CreatedAt, UpdatedAt)
-                VALUES (@Id, @LeagueId, @HomeClubId, @AwayClubId, @ScheduledDate, @MatchWeek, @IsPlayed, @MatchId, @CreatedAt, @UpdatedAt)";
+                (Id, LeagueId, HomeClubId, AwayClubId, ScheduledDate, MatchDate, MatchWeek, IsPlayed, Status, MatchId, CreatedAt, UpdatedAt)
+                VALUES (@Id, @LeagueId, @HomeClubId, @AwayClubId, @ScheduledDate, @ScheduledDate, @MatchWeek, @IsPlayed, @Status, @MatchId, @CreatedAt, @UpdatedAt)";
 
             var dbFixture = MapToDatabase(fixture);
             await connection.ExecuteAsync(sql, (object)dbFixture);
@@ -40,8 +40,8 @@ public class FixtureRepository : FM100.Core.Repositories.IFixtureRepository
 
             var sql = @"
                 INSERT INTO Fixtures 
-                (Id, LeagueId, HomeClubId, AwayClubId, ScheduledDate, MatchWeek, IsPlayed, MatchId, CreatedAt, UpdatedAt)
-                VALUES (@Id, @LeagueId, @HomeClubId, @AwayClubId, @ScheduledDate, @MatchWeek, @IsPlayed, @MatchId, @CreatedAt, @UpdatedAt)";
+                (Id, LeagueId, HomeClubId, AwayClubId, ScheduledDate, MatchDate, MatchWeek, IsPlayed, Status, MatchId, CreatedAt, UpdatedAt)
+                VALUES (@Id, @LeagueId, @HomeClubId, @AwayClubId, @ScheduledDate, @ScheduledDate, @MatchWeek, @IsPlayed, @Status, @MatchId, @CreatedAt, @UpdatedAt)";
 
             var dbFixtures = fixtures.Select(MapToDatabase).ToList();
             await connection.ExecuteAsync(sql, dbFixtures);
@@ -140,8 +140,8 @@ public class FixtureRepository : FM100.Core.Repositories.IFixtureRepository
             var sql = @"
                 UPDATE Fixtures 
                 SET LeagueId = @LeagueId, HomeClubId = @HomeClubId, AwayClubId = @AwayClubId,
-                    ScheduledDate = @ScheduledDate, MatchWeek = @MatchWeek, IsPlayed = @IsPlayed,
-                    MatchId = @MatchId, UpdatedAt = @UpdatedAt
+                    ScheduledDate = @ScheduledDate, MatchDate = @ScheduledDate, MatchWeek = @MatchWeek,
+                    IsPlayed = @IsPlayed, Status = @Status, MatchId = @MatchId, UpdatedAt = @UpdatedAt
                 WHERE Id = @Id";
 
             var dbFixture = MapToDatabase(fixture);
@@ -214,6 +214,7 @@ public class FixtureRepository : FM100.Core.Repositories.IFixtureRepository
             ScheduledDate = fixture.ScheduledDate.ToString("O"),
             MatchWeek = fixture.MatchWeek,
             IsPlayed = fixture.IsPlayed ? 1 : 0,
+            Status = fixture.IsPlayed ? 2 : 0,
             MatchId = fixture.MatchId?.ToString() ?? (object)DBNull.Value,
             CreatedAt = now,
             UpdatedAt = now

@@ -1,4 +1,5 @@
 using FM100.Domain.Club;
+using FM100.Domain.FootballPlayer;
 using FM100.Domain.League;
 
 namespace FM100.Core.GameState;
@@ -47,6 +48,16 @@ public class GameState
     /// All completed matches for the active game.
     /// </summary>
     public Dictionary<Guid, Match> Matches { get; set; } = [];
+
+    /// <summary>
+    /// All generated players available in the active game.
+    /// </summary>
+    public Dictionary<Guid, FootballPlayer> Players { get; set; } = [];
+
+    /// <summary>
+    /// Selected lineups by club ID.
+    /// </summary>
+    public Dictionary<Guid, TeamLineup> Lineups { get; set; } = [];
 
     /// <summary>
     /// Hall of Fame records.

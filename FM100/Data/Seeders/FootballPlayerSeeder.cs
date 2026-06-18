@@ -36,6 +36,7 @@ public class FootballPlayerSeeder
     /// </summary>
     public List<FootballPlayer> GeneratePlayersForTeam(int count = 23)
     {
+        var positions = CreatePositionPlan(count);
         var faker = new Faker<FootballPlayer>()
             .RuleFor(p => p.Id, f => Guid.NewGuid())
             .RuleFor(p => p.FirstName, f => f.Name.FirstName())
@@ -47,6 +48,7 @@ public class FootballPlayerSeeder
             .RuleFor(p => p.Height, f => f.Random.Int(168, 200))
             .RuleFor(p => p.Weight, f => f.Random.Int(65, 95))
             .RuleFor(p => p.ShirtNumber, f => f.Random.Int(1, 99).OrNull(f, 0.3f) ?? 0)
+            .RuleFor(p => p.Position, f => f.PickRandom<PlayerPosition>())
             .RuleFor(p => p.Potential, f => f.Random.Int(60, 99))
             .RuleFor(p => p.Reputation, f => f.Random.Int(1, 20))
             .RuleFor(p => p.MarketValue, f => f.Random.Int(1, 100))
@@ -75,7 +77,23 @@ public class FootballPlayerSeeder
             })
             .RuleFor(p => p.CurrentMatchEmotionalState, f => null);
 
-        return faker.Generate(count) ?? new List<FootballPlayer>();
+        var players = faker.Generate(count) ?? new List<FootballPlayer>();
+        for (var i = 0; i < players.Count && i < positions.Count; i++)
+        {
+            players[i].Position = positions[i];
+        }
+
+        return players;
+    }
+
+    private static List<PlayerPosition> CreatePositionPlan(int count)
+    {
+        var plan = new List<PlayerPosition>();
+        plan.AddRange(Enumerable.Repeat(PlayerPosition.Goalkeeper, Math.Min(3, count)));
+        plan.AddRange(Enumerable.Repeat(PlayerPosition.Defender, Math.Max(0, Math.Min(7, count - plan.Count))));
+        plan.AddRange(Enumerable.Repeat(PlayerPosition.Midfielder, Math.Max(0, Math.Min(7, count - plan.Count))));
+        plan.AddRange(Enumerable.Repeat(PlayerPosition.Forward, Math.Max(0, count - plan.Count)));
+        return plan;
     }
 
     /// <summary>

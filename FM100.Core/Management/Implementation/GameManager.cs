@@ -1,7 +1,9 @@
 using FM100.Core.GameState;
 using FM100.Core.Management;
 using FM100.Core.Repositories;
+using FM100.Domain.Base.Attribute;
 using FM100.Domain.Club;
+using FM100.Domain.FootballPlayer;
 using FM100.Domain.League;
 using Microsoft.Extensions.Logging;
 
@@ -78,6 +80,10 @@ public class GameManager : IGameManager
 
             _logger?.LogInformation("Player selected club: {ClubName} (ID: {ClubId})", playerClub.Name, playerClub.Id);
 
+            var players = GeneratePlayerSquad(playerClub);
+            playerClub.PlayerIds = players.Select(p => p.Id).ToList();
+            var playerLineup = CreateDefaultLineup(playerClub, players);
+
             // Create leagues for all divisions
             var leagues = new Dictionary<Guid, League>();
             var fixtures = new Dictionary<Guid, Fixture>();
@@ -107,6 +113,11 @@ public class GameManager : IGameManager
                 CurrentSeason = 1,
                 CurrentLeagueId = leagues.Values.FirstOrDefault(l => l.Division == selectedDivision)?.Id,
                 Clubs = clubs.ToDictionary(c => c.Id),
+                Players = players.ToDictionary(p => p.Id),
+                Lineups = new Dictionary<Guid, TeamLineup>
+                {
+                    [playerClub.Id] = playerLineup
+                },
                 Leagues = leagues,
                 Fixtures = fixtures,
                 Difficulty = difficulty,
@@ -123,6 +134,154 @@ public class GameManager : IGameManager
             _logger?.LogError(ex, "Failed to start new game");
             throw;
         }
+    }
+
+    private static List<FootballPlayer> GeneratePlayerSquad(Club club)
+    {
+        var random = new Random(HashCode.Combine(club.Id, club.Name));
+        var firstNames = new[]
+        {
+            "Marco", "Luca", "Andrea", "Matteo", "Nico", "Leo", "Gabriel", "Daniel",
+            "Rafael", "Lucas", "Theo", "Samuel", "Ivan", "Victor", "Alex", "David"
+        };
+        var lastNames = new[]
+        {
+            "Rossi", "Bianchi", "Costa", "Marino", "Silva", "Moretti", "Romano", "Greco",
+            "Ferri", "Fontana", "Mancini", "Ricci", "Conti", "Lombardi", "Barros", "Vidal"
+        };
+        var nationalities = new[]
+        {
+            "Italian", "Spanish", "French", "German", "Portuguese", "Brazilian", "Argentinian", "Dutch"
+        };
+
+        var positionPlan = new[]
+        {
+            PlayerPosition.Goalkeeper, PlayerPosition.Goalkeeper, PlayerPosition.Goalkeeper,
+            PlayerPosition.Defender, PlayerPosition.Defender, PlayerPosition.Defender, PlayerPosition.Defender, PlayerPosition.Defender, PlayerPosition.Defender, PlayerPosition.Defender,
+            PlayerPosition.Midfielder, PlayerPosition.Midfielder, PlayerPosition.Midfielder, PlayerPosition.Midfielder, PlayerPosition.Midfielder, PlayerPosition.Midfielder, PlayerPosition.Midfielder,
+            PlayerPosition.Forward, PlayerPosition.Forward, PlayerPosition.Forward, PlayerPosition.Forward, PlayerPosition.Forward, PlayerPosition.Forward
+        };
+
+        var squad = new List<FootballPlayer>();
+        for (var index = 0; index < positionPlan.Length; index++)
+        {
+            var position = positionPlan[index];
+            var shirtNumber = index + 1;
+            var age = random.Next(18, 35);
+            var reputation = Math.Clamp(club.Reputation + random.Next(-4, 4), 1, 20);
+
+            squad.Add(new FootballPlayer
+            {
+                Id = Guid.NewGuid(),
+                FirstName = firstNames[random.Next(firstNames.Length)],
+                LastName = lastNames[random.Next(lastNames.Length)],
+                BirthDate = DateTime.UtcNow.AddYears(-age).AddDays(random.Next(-320, 320)),
+                Age = age,
+                Nationality = nationalities[random.Next(nationalities.Length)],
+                Description = $"First team player for {club.Name}",
+                Height = random.Next(170, 199),
+                Weight = random.Next(66, 94),
+                ShirtNumber = shirtNumber,
+                Position = position,
+                Potential = Math.Clamp(reputation + random.Next(0, 6), 1, 20),
+                Reputation = reputation,
+                MarketValue = Math.Max(1, reputation * random.Next(2, 9)),
+                CurrentState = new DynamicState
+                {
+                    Happiness = random.Next(9, 17),
+                    Morale = random.Next(9, 17),
+                    Confidence = random.Next(8, 17),
+                    Fatigue = random.Next(1, 5),
+                    TeamCohesion = random.Next(9, 17),
+                    CoachRelationship = random.Next(9, 17)
+                },
+                MentalAttributes = new MentalAttributes
+                {
+                    Composure = random.Next(6, 20),
+                    Concentration = random.Next(6, 20),
+                    Leadership = random.Next(4, 20),
+                    Courage = random.Next(6, 20),
+                    Aggression = random.Next(4, 18),
+                    TacticalIntelligence = random.Next(6, 20),
+                    Resilience = random.Next(6, 20),
+                    Ambition = random.Next(6, 20),
+                    Discipline = random.Next(6, 20),
+                    Loyalty = random.Next(5, 20),
+                    PressureHandling = random.Next(6, 20)
+                }
+            });
+        }
+
+        return squad;
+    }
+
+    private static TeamLineup CreateDefaultLineup(Club club, IEnumerable<FootballPlayer> players)
+    {
+        var playerList = players.ToList();
+        var targetShape = GetFormationShape(club.Formation);
+        var starters = new List<FootballPlayer>();
+
+        AddBestByPosition(starters, playerList, PlayerPosition.Goalkeeper, 1);
+        AddBestByPosition(starters, playerList, PlayerPosition.Defender, targetShape.Defenders);
+        AddBestByPosition(starters, playerList, PlayerPosition.Midfielder, targetShape.Midfielders);
+        AddBestByPosition(starters, playerList, PlayerPosition.Forward, targetShape.Forwards);
+
+        var orderedPlayers = playerList
+            .OrderByDescending(p => p.Reputation)
+            .ThenByDescending(p => p.Potential)
+            .ThenBy(p => p.ShirtNumber)
+            .ToList();
+        foreach (var player in orderedPlayers.Where(p => !starters.Contains(p)))
+        {
+            if (starters.Count >= 11)
+            {
+                break;
+            }
+
+            starters.Add(player);
+        }
+
+        return new TeamLineup
+        {
+            ClubId = club.Id,
+            Formation = club.Formation,
+            StartingPlayerIds = starters.Select(p => p.Id).ToList(),
+            SubstitutePlayerIds = orderedPlayers.Where(p => !starters.Contains(p)).Take(12).Select(p => p.Id).ToList(),
+            UpdatedAt = DateTime.UtcNow
+        };
+    }
+
+    private static void AddBestByPosition(
+        ICollection<FootballPlayer> starters,
+        IEnumerable<FootballPlayer> players,
+        PlayerPosition position,
+        int count)
+    {
+        foreach (var player in players
+            .Where(p => p.Position == position && !starters.Contains(p))
+            .OrderByDescending(p => p.Reputation)
+            .ThenByDescending(p => p.Potential)
+            .ThenBy(p => p.ShirtNumber)
+            .Take(count))
+        {
+            starters.Add(player);
+        }
+    }
+
+    private static (int Defenders, int Midfielders, int Forwards) GetFormationShape(string formation)
+    {
+        var parts = formation
+            .Split('-', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(part => int.TryParse(part, out var value) ? value : 0)
+            .Where(value => value > 0)
+            .ToList();
+
+        if (parts.Count < 3)
+        {
+            return (4, 3, 3);
+        }
+
+        return (parts[0], parts.Skip(1).Take(parts.Count - 2).Sum(), parts[^1]);
     }
 
     /// <summary>

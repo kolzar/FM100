@@ -16,6 +16,11 @@ public class FootballPlayer : Person
     public int ShirtNumber { get; set; }
 
     /// <summary>
+    /// Main tactical position.
+    /// </summary>
+    public PlayerPosition Position { get; set; } = PlayerPosition.Midfielder;
+
+    /// <summary>
     /// Potential ability score (1-20).
     /// Indicates the maximum skill level the player could reach in their career.
     /// Used for player development and long-term planning.

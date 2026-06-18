@@ -24,6 +24,7 @@ public static class GameManagementServiceCollectionExtensions
         // Register managers
         services.AddSingleton<ILeagueManager, LeagueManager>();
         services.AddSingleton<IMatchSimulator, MatchSimulator>();
+        services.AddSingleton<IMatchDayService, MatchDayService>();
 
         // Register GameManager with optional IGameSaveRepository for persistence
         services.AddSingleton<IGameManager>(sp =>

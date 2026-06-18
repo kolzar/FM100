@@ -25,8 +25,8 @@ public class MatchRepository : FM100.Core.Repositories.IMatchRepository
 
             var sql = @"
                 INSERT INTO Matches 
-                (Id, FixtureId, HomeClubId, AwayClubId, HomeGoals, AwayGoals, Status, PlayedAt, Events, HomePerformanceRating, AwayPerformanceRating, CreatedAt)
-                VALUES (@Id, @FixtureId, @HomeClubId, @AwayClubId, @HomeGoals, @AwayGoals, @Status, @PlayedAt, @Events, @HomePerformanceRating, @AwayPerformanceRating, @CreatedAt)";
+                (Id, FixtureId, HomeClubId, AwayClubId, HomeGoals, AwayGoals, HomeScore, AwayScore, Status, PlayedAt, Events, MatchData, HomePerformanceRating, AwayPerformanceRating, CreatedAt, UpdatedAt)
+                VALUES (@Id, @FixtureId, @HomeClubId, @AwayClubId, @HomeGoals, @AwayGoals, @HomeGoals, @AwayGoals, @Status, @PlayedAt, @Events, @Events, @HomePerformanceRating, @AwayPerformanceRating, @CreatedAt, @UpdatedAt)";
 
             var dbMatch = MapToDatabase(match);
             await connection.ExecuteAsync(sql, (object)dbMatch);
@@ -143,9 +143,10 @@ public class MatchRepository : FM100.Core.Repositories.IMatchRepository
             var sql = @"
                 UPDATE Matches 
                 SET FixtureId = @FixtureId, HomeClubId = @HomeClubId, AwayClubId = @AwayClubId,
-                    HomeGoals = @HomeGoals, AwayGoals = @AwayGoals, Status = @Status, PlayedAt = @PlayedAt,
-                    Events = @Events, HomePerformanceRating = @HomePerformanceRating, 
-                    AwayPerformanceRating = @AwayPerformanceRating
+                    HomeGoals = @HomeGoals, AwayGoals = @AwayGoals, HomeScore = @HomeGoals, AwayScore = @AwayGoals,
+                    Status = @Status, PlayedAt = @PlayedAt, Events = @Events, MatchData = @Events,
+                    HomePerformanceRating = @HomePerformanceRating, AwayPerformanceRating = @AwayPerformanceRating,
+                    UpdatedAt = @UpdatedAt
                 WHERE Id = @Id";
 
             var dbMatch = MapToDatabase(match);
@@ -242,7 +243,8 @@ public class MatchRepository : FM100.Core.Repositories.IMatchRepository
             Events = JsonSerializer.Serialize(match.Events),
             HomePerformanceRating = match.HomePerformanceRating,
             AwayPerformanceRating = match.AwayPerformanceRating,
-            CreatedAt = now
+            CreatedAt = now,
+            UpdatedAt = now
         };
     }
 }

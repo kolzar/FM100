@@ -207,9 +207,22 @@ namespace FM100
 
             var app = Application.Current as App;
             var matchSimulator = app?.GetServiceProvider().GetService(typeof(IMatchSimulator)) as IMatchSimulator;
+            var matchRepository = app?.GetServiceProvider().GetService(typeof(IMatchRepository)) as IMatchRepository;
+            var matchEventRepository = app?.GetServiceProvider().GetService(typeof(IMatchEventRepository)) as IMatchEventRepository;
+            var matchStatisticsRepository = app?.GetServiceProvider().GetService(typeof(IMatchStatisticsRepository)) as IMatchStatisticsRepository;
+            var fixtureRepository = app?.GetServiceProvider().GetService(typeof(IFixtureRepository)) as IFixtureRepository;
+            var matchDayService = app?.GetServiceProvider().GetService(typeof(IMatchDayService)) as IMatchDayService;
 
             var dashboard = new GameDashboardView();
-            dashboard.Initialize(_currentGameState, _gameManager, matchSimulator);
+            dashboard.Initialize(
+                _currentGameState,
+                _gameManager,
+                matchSimulator,
+                matchRepository,
+                matchEventRepository,
+                matchStatisticsRepository,
+                fixtureRepository,
+                matchDayService);
             ViewHost.Content = dashboard;
         }
 

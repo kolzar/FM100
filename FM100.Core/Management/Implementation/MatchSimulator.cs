@@ -102,7 +102,8 @@ public class MatchSimulator : IMatchSimulator
             {
                 EventType = MatchEventType.Goal,
                 Minute = _random.Next(5, 95),
-                Description = "Goal by home team player"
+                Description = "Goal by home team player",
+                EmotionalImpact = 8
             });
         }
 
@@ -113,7 +114,8 @@ public class MatchSimulator : IMatchSimulator
             {
                 EventType = MatchEventType.Goal,
                 Minute = _random.Next(5, 95),
-                Description = "Goal by away team player"
+                Description = "Goal by away team player",
+                EmotionalImpact = 8
             });
         }
 
@@ -122,11 +124,13 @@ public class MatchSimulator : IMatchSimulator
         for (int i = 0; i < cardChance; i++)
         {
             var isRed = _random.Next(0, 10) > 8; // 20% chance of red card if card awarded
+            var teamName = _random.Next(0, 2) == 0 ? "home team" : "away team";
             events.Add(new MatchEvent
             {
                 EventType = isRed ? MatchEventType.RedCard : MatchEventType.YellowCard,
                 Minute = _random.Next(5, 95),
-                Description = isRed ? "Red card" : "Yellow card"
+                Description = isRed ? $"Red card for {teamName}" : $"Yellow card for {teamName}",
+                EmotionalImpact = isRed ? -8 : -3
             });
         }
 

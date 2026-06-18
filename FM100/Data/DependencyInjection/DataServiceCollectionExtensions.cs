@@ -24,6 +24,8 @@ public static class DataServiceCollectionExtensions
         services.AddSingleton<LeagueRepository>();
         services.AddSingleton<FixtureRepository>();
         services.AddSingleton<MatchRepository>();
+        services.AddSingleton<MatchEventRepository>();
+        services.AddSingleton<MatchStatisticsRepository>();
         services.AddSingleton<GameSaveRepository>();
         services.AddSingleton<ClubRepository>();
         services.AddSingleton<CachedClubRepository>();
@@ -34,6 +36,8 @@ public static class DataServiceCollectionExtensions
         services.AddSingleton<ILeagueRepository>(sp => sp.GetRequiredService<LeagueRepository>());
         services.AddSingleton<IFixtureRepository>(sp => sp.GetRequiredService<CachedFixtureRepository>());
         services.AddSingleton<IMatchRepository>(sp => sp.GetRequiredService<MatchRepository>());
+        services.AddSingleton<IMatchEventRepository>(sp => sp.GetRequiredService<MatchEventRepository>());
+        services.AddSingleton<IMatchStatisticsRepository>(sp => sp.GetRequiredService<MatchStatisticsRepository>());
         services.AddSingleton<IGameSaveRepository>(sp => sp.GetRequiredService<GameSaveRepository>());
         services.AddSingleton<IClubRepository>(sp => sp.GetRequiredService<CachedClubRepository>());
 

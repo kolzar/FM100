@@ -55,6 +55,22 @@
                                 <Run x:Name="BudgetText" Text="0" Foreground="#ffff00"/>
                                 <Run Text="M"/>
                             </TextBlock>
+
+                            <Border Background="{DynamicResource TertiaryBackgroundBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Padding="15" CornerRadius="5" Margin="0,12,0,0">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="180"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel>
+                                        <TextBlock Text="NEXT MATCH" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource SecondaryTextBrush}" Margin="0,0,0,6"/>
+                                        <TextBlock x:Name="NextMatchText" Text="No upcoming match" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource PrimaryTextBrush}"/>
+                                        <TextBlock x:Name="NextMatchMetaText" Text="" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" Margin="0,4,0,0"/>
+                                        <TextBlock x:Name="NextMatchStrengthText" Text="" FontSize="12" Foreground="{DynamicResource AccentBrush}" Margin="0,4,0,0"/>
+                                    </StackPanel>
+                                    <Button Grid.Column="1" x:Name="DashboardPlayButton" Content="PLAY MATCH" Height="40" Width="150" HorizontalAlignment="Right" VerticalAlignment="Center" Foreground="{DynamicResource InverseTextBrush}" Background="{DynamicResource SuccessBrush}" FontSize="12" FontWeight="Bold" Cursor="Hand" Click="PlayFixture_Click"/>
+                                </Grid>
+                            </Border>
                         </StackPanel>
                     </Border>
 
@@ -79,7 +95,48 @@
                     <Border x:Name="ResultsContent" Visibility="Collapsed" Background="{DynamicResource PanelBackgroundBrush}" Padding="20" CornerRadius="5" Margin="0,0,0,20">
                         <StackPanel>
                             <TextBlock Text="RECENT RESULTS" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource AccentBrush}" Margin="0,0,0,15"/>
-                            <ListBox x:Name="ResultsList" Background="{DynamicResource PrimaryBackgroundBrush}" Foreground="{DynamicResource PrimaryTextBrush}" Height="400" BorderThickness="0"/>
+                            <ListBox x:Name="ResultsList" Background="{DynamicResource PrimaryBackgroundBrush}" Foreground="{DynamicResource PrimaryTextBrush}" Height="260" BorderThickness="0" Margin="0,0,0,15">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid Margin="4">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="70"/>
+                                                <ColumnDefinition Width="90"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="60"/>
+                                                <ColumnDefinition Width="90"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" Text="{Binding WeekText}" Foreground="{DynamicResource SecondaryTextBrush}" VerticalAlignment="Center"/>
+                                            <TextBlock Grid.Column="1" Text="{Binding Date}" Foreground="{DynamicResource SecondaryTextBrush}" VerticalAlignment="Center"/>
+                                            <TextBlock Grid.Column="2" Text="{Binding MatchText}" Foreground="{DynamicResource PrimaryTextBrush}" VerticalAlignment="Center"/>
+                                            <TextBlock Grid.Column="3" Text="{Binding Score}" Foreground="{DynamicResource AccentBrush}" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            <Button Grid.Column="4" Content="DETAILS" Height="28" Tag="{Binding MatchId}" IsEnabled="{Binding HasMatchDetails}" Click="ViewMatchDetails_Click" Foreground="{DynamicResource InverseTextBrush}" Background="{DynamicResource AccentBrush}" FontSize="11" FontWeight="Bold" Cursor="Hand"/>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+
+                            <Border x:Name="MatchDetailContent" Visibility="Collapsed" Background="{DynamicResource TertiaryBackgroundBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Padding="15" CornerRadius="5">
+                                <StackPanel>
+                                    <Grid Margin="0,0,0,12">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel>
+                                            <TextBlock x:Name="MatchDetailTitle" Text="MATCH DETAILS" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource AccentBrush}"/>
+                                            <TextBlock x:Name="MatchDetailScore" Text="" FontSize="13" Foreground="{DynamicResource PrimaryTextBrush}" Margin="0,4,0,0"/>
+                                        </StackPanel>
+                                        <Button Grid.Column="1" Content="CLOSE" Width="80" Height="28" Click="CloseMatchDetails_Click" Foreground="{DynamicResource PrimaryTextBrush}" Background="{DynamicResource InputBackgroundBrush}" FontSize="11" FontWeight="Bold" Cursor="Hand"/>
+                                    </Grid>
+
+                                    <TextBlock Text="STATISTICS" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource PrimaryTextBrush}" Margin="0,0,0,6"/>
+                                    <ListBox x:Name="MatchStatisticsList" Background="{DynamicResource PrimaryBackgroundBrush}" Foreground="{DynamicResource PrimaryTextBrush}" Height="110" BorderThickness="0" Margin="0,0,0,12"/>
+
+                                    <TextBlock Text="TIMELINE" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource PrimaryTextBrush}" Margin="0,0,0,6"/>
+                                    <ListBox x:Name="MatchEventsList" Background="{DynamicResource PrimaryBackgroundBrush}" Foreground="{DynamicResource PrimaryTextBrush}" Height="160" BorderThickness="0"/>
+                                </StackPanel>
+                            </Border>
                         </StackPanel>
                     </Border>
 
@@ -87,7 +144,72 @@
                     <Border x:Name="SquadContent" Visibility="Collapsed" Background="{DynamicResource PanelBackgroundBrush}" Padding="20" CornerRadius="5" Margin="0,0,0,20">
                         <StackPanel>
                             <TextBlock Text="YOUR SQUAD" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource AccentBrush}" Margin="0,0,0,15"/>
-                            <TextBlock Text="Squad management coming soon!" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                            <Grid Margin="0,0,0,15">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="220"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <TextBlock x:Name="SquadSummaryText" Text="0 players" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource PrimaryTextBrush}"/>
+                                    <TextBlock x:Name="SquadMoodText" Text="Morale -- | Value --" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" Margin="0,4,0,0"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1">
+                                    <TextBlock Text="FORMATION" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource SecondaryTextBrush}" Margin="0,0,0,4"/>
+                                    <ComboBox x:Name="FormationComboBox" Height="34" SelectionChanged="FormationComboBox_SelectionChanged" Background="{DynamicResource InputBackgroundBrush}" Foreground="{DynamicResource PrimaryTextBrush}">
+                                        <ComboBoxItem Content="4-3-3"/>
+                                        <ComboBoxItem Content="4-4-2"/>
+                                        <ComboBoxItem Content="3-5-2"/>
+                                        <ComboBoxItem Content="4-2-3-1"/>
+                                        <ComboBoxItem Content="5-3-2"/>
+                                    </ComboBox>
+                                </StackPanel>
+                            </Grid>
+
+                            <Grid Margin="0,0,0,15">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0" Margin="0,0,8,0">
+                                    <TextBlock Text="STARTING XI" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource PrimaryTextBrush}" Margin="0,0,0,6"/>
+                                    <ListBox x:Name="StartingLineupList" Background="{DynamicResource PrimaryBackgroundBrush}" Foreground="{DynamicResource PrimaryTextBrush}" Height="180" BorderThickness="0"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Margin="8,0,0,0">
+                                    <TextBlock Text="BENCH" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource PrimaryTextBrush}" Margin="0,0,0,6"/>
+                                    <ListBox x:Name="BenchList" Background="{DynamicResource PrimaryBackgroundBrush}" Foreground="{DynamicResource PrimaryTextBrush}" Height="180" BorderThickness="0"/>
+                                </StackPanel>
+                            </Grid>
+
+                            <TextBlock Text="FULL ROSTER" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource PrimaryTextBrush}" Margin="0,0,0,6"/>
+                            <ListBox x:Name="SquadList" Background="{DynamicResource PrimaryBackgroundBrush}" Foreground="{DynamicResource PrimaryTextBrush}" Height="420" BorderThickness="0">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid Margin="4">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="44"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="70"/>
+                                                <ColumnDefinition Width="90"/>
+                                                <ColumnDefinition Width="90"/>
+                                                <ColumnDefinition Width="90"/>
+                                                <ColumnDefinition Width="84"/>
+                                                <ColumnDefinition Width="84"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" Text="{Binding Number}" Foreground="{DynamicResource AccentBrush}" FontWeight="Bold" VerticalAlignment="Center"/>
+                                            <StackPanel Grid.Column="1">
+                                                <TextBlock Text="{Binding Name}" Foreground="{DynamicResource PrimaryTextBrush}" FontWeight="SemiBold"/>
+                                                <TextBlock Text="{Binding Description}" Foreground="{DynamicResource SecondaryTextBrush}" FontSize="11"/>
+                                            </StackPanel>
+                                            <TextBlock Grid.Column="2" Text="{Binding AgeText}" Foreground="{DynamicResource SecondaryTextBrush}" VerticalAlignment="Center"/>
+                                            <TextBlock Grid.Column="3" Text="{Binding ReputationText}" Foreground="{DynamicResource PrimaryTextBrush}" VerticalAlignment="Center"/>
+                                            <TextBlock Grid.Column="4" Text="{Binding MoraleText}" Foreground="{DynamicResource PrimaryTextBrush}" VerticalAlignment="Center"/>
+                                            <TextBlock Grid.Column="5" Text="{Binding ValueText}" Foreground="{DynamicResource SuccessBrush}" VerticalAlignment="Center"/>
+                                            <Button Grid.Column="6" Content="START" Height="28" Tag="{Binding PlayerId}" Click="MovePlayerToStarting_Click" Foreground="{DynamicResource InverseTextBrush}" Background="{DynamicResource AccentBrush}" FontSize="11" FontWeight="Bold" Cursor="Hand" Margin="4,0"/>
+                                            <Button Grid.Column="7" Content="BENCH" Height="28" Tag="{Binding PlayerId}" Click="MovePlayerToBench_Click" Foreground="{DynamicResource PrimaryTextBrush}" Background="{DynamicResource InputBackgroundBrush}" FontSize="11" FontWeight="Bold" Cursor="Hand" Margin="4,0"/>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
                         </StackPanel>
                     </Border>
 

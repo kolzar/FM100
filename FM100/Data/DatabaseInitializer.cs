@@ -69,7 +69,17 @@ public static class DatabaseInitializer
         {
             connection.Open();
 
-            var requiredTables = new[] { "Clubs", "FootballPlayers", "Leagues", "Fixtures", "Matches", "GameSaves" };
+            var requiredTables = new[]
+            {
+                "Clubs",
+                "FootballPlayers",
+                "Leagues",
+                "Fixtures",
+                "Matches",
+                "MatchEvents",
+                "MatchStatistics",
+                "GameSaves"
+            };
             bool needsCreation = false;
 
             var command = connection.CreateCommand();
@@ -90,7 +100,47 @@ public static class DatabaseInitializer
                 command.CommandText = GetCreateTablesSql();
                 command.ExecuteNonQuery();
             }
+
+            EnsureColumnExists(connection, "Fixtures", "ScheduledDate", "TEXT");
+            EnsureColumnExists(connection, "Fixtures", "MatchWeek", "INTEGER NOT NULL DEFAULT 1");
+            EnsureColumnExists(connection, "Fixtures", "IsPlayed", "INTEGER NOT NULL DEFAULT 0");
+            EnsureColumnExists(connection, "Fixtures", "MatchId", "TEXT");
+            EnsureColumnExists(connection, "Fixtures", "UpdatedAt", "TEXT NOT NULL DEFAULT ''");
+            EnsureColumnExists(connection, "Fixtures", "MatchDate", "TEXT NOT NULL DEFAULT ''");
+            EnsureColumnExists(connection, "Fixtures", "Status", "INTEGER NOT NULL DEFAULT 0");
+
+            EnsureColumnExists(connection, "Matches", "HomeGoals", "INTEGER NOT NULL DEFAULT 0");
+            EnsureColumnExists(connection, "Matches", "AwayGoals", "INTEGER NOT NULL DEFAULT 0");
+            EnsureColumnExists(connection, "Matches", "PlayedAt", "TEXT");
+            EnsureColumnExists(connection, "Matches", "Events", "TEXT NOT NULL DEFAULT '[]'");
+            EnsureColumnExists(connection, "Matches", "HomePerformanceRating", "INTEGER NOT NULL DEFAULT 10");
+            EnsureColumnExists(connection, "Matches", "AwayPerformanceRating", "INTEGER NOT NULL DEFAULT 10");
+            EnsureColumnExists(connection, "Matches", "HomeScore", "INTEGER NOT NULL DEFAULT 0");
+            EnsureColumnExists(connection, "Matches", "AwayScore", "INTEGER NOT NULL DEFAULT 0");
+            EnsureColumnExists(connection, "Matches", "MatchData", "TEXT NOT NULL DEFAULT '{}'");
+            EnsureColumnExists(connection, "Matches", "UpdatedAt", "TEXT NOT NULL DEFAULT ''");
+
+            EnsureColumnExists(connection, "FootballPlayers", "Position", "INTEGER NOT NULL DEFAULT 3");
         }
+    }
+
+    private static void EnsureColumnExists(SQLiteConnection connection, string tableName, string columnName, string columnDefinition)
+    {
+        var command = connection.CreateCommand();
+        command.CommandText = $"PRAGMA table_info({tableName})";
+
+        using var reader = command.ExecuteReader();
+        while (reader.Read())
+        {
+            if (string.Equals(reader["name"]?.ToString(), columnName, StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+        }
+
+        command = connection.CreateCommand();
+        command.CommandText = $"ALTER TABLE {tableName} ADD COLUMN {columnName} {columnDefinition}";
+        command.ExecuteNonQuery();
     }
 
     /// <summary>
@@ -133,6 +183,7 @@ public static class DatabaseInitializer
                     Height INTEGER NOT NULL,
                     Weight INTEGER NOT NULL,
                     ShirtNumber INTEGER NOT NULL,
+                    Position INTEGER NOT NULL DEFAULT 3,
                     Potential INTEGER NOT NULL,
                     Reputation INTEGER NOT NULL,
                     MarketValue INTEGER NOT NULL,
@@ -166,8 +217,12 @@ public static class DatabaseInitializer
                     LeagueId TEXT NOT NULL,
                     HomeClubId TEXT NOT NULL,
                     AwayClubId TEXT NOT NULL,
-                    MatchDate TEXT NOT NULL,
-                    Status INTEGER NOT NULL,
+                    ScheduledDate TEXT NOT NULL,
+                    MatchDate TEXT NOT NULL DEFAULT '',
+                    MatchWeek INTEGER NOT NULL,
+                    IsPlayed INTEGER NOT NULL,
+                    Status INTEGER NOT NULL DEFAULT 0,
+                    MatchId TEXT,
                     CreatedAt TEXT NOT NULL,
                     UpdatedAt TEXT NOT NULL
                 );
@@ -179,16 +234,56 @@ public static class DatabaseInitializer
                     FixtureId TEXT NOT NULL,
                     HomeClubId TEXT NOT NULL,
                     AwayClubId TEXT NOT NULL,
-                    HomeScore INTEGER NOT NULL,
-                    AwayScore INTEGER NOT NULL,
+                    HomeGoals INTEGER NOT NULL,
+                    AwayGoals INTEGER NOT NULL,
+                    HomeScore INTEGER NOT NULL DEFAULT 0,
+                    AwayScore INTEGER NOT NULL DEFAULT 0,
                     Status INTEGER NOT NULL,
-                    MatchData TEXT NOT NULL,
+                    PlayedAt TEXT NOT NULL,
+                    Events TEXT NOT NULL,
+                    MatchData TEXT NOT NULL DEFAULT '{}',
+                    HomePerformanceRating INTEGER NOT NULL,
+                    AwayPerformanceRating INTEGER NOT NULL,
                     CreatedAt TEXT NOT NULL,
-                    UpdatedAt TEXT NOT NULL,
+                    UpdatedAt TEXT NOT NULL DEFAULT '',
                     FOREIGN KEY (FixtureId) REFERENCES Fixtures(Id)
                 );
 
                 CREATE INDEX IF NOT EXISTS idx_match_fixture ON Matches(FixtureId);
+
+                CREATE TABLE IF NOT EXISTS MatchEvents (
+                    Id TEXT PRIMARY KEY,
+                    MatchId TEXT NOT NULL,
+                    TeamId TEXT NOT NULL,
+                    EventType INTEGER NOT NULL,
+                    Minute INTEGER NOT NULL,
+                    Description TEXT NOT NULL,
+                    EmotionalImpact INTEGER NOT NULL,
+                    Timestamp TEXT NOT NULL,
+                    CreatedAt TEXT NOT NULL,
+                    FOREIGN KEY (MatchId) REFERENCES Matches(Id)
+                );
+
+                CREATE INDEX IF NOT EXISTS idx_matchevent_match ON MatchEvents(MatchId);
+
+                CREATE TABLE IF NOT EXISTS MatchStatistics (
+                    Id TEXT PRIMARY KEY,
+                    MatchId TEXT NOT NULL,
+                    TeamId TEXT NOT NULL,
+                    GoalsScored INTEGER NOT NULL,
+                    GoalsAgainst INTEGER NOT NULL,
+                    Possession TEXT NOT NULL,
+                    Shots INTEGER NOT NULL,
+                    ShotsOnTarget INTEGER NOT NULL,
+                    Fouls INTEGER NOT NULL,
+                    YellowCards INTEGER NOT NULL,
+                    RedCards INTEGER NOT NULL,
+                    CreatedAt TEXT NOT NULL,
+                    FOREIGN KEY (MatchId) REFERENCES Matches(Id)
+                );
+
+                CREATE INDEX IF NOT EXISTS idx_matchstats_match ON MatchStatistics(MatchId);
+                CREATE INDEX IF NOT EXISTS idx_matchstats_team ON MatchStatistics(TeamId);
 
                 CREATE TABLE IF NOT EXISTS GameSaves (
                     Id TEXT PRIMARY KEY,
