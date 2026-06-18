@@ -10,12 +10,14 @@
         Height="900" 
         Width="1400"
         WindowStartupLocation="CenterScreen"
-        Background="#1a1a2e"
-        Foreground="White">
+        Background="{DynamicResource PrimaryBackgroundBrush}"
+        Foreground="{DynamicResource PrimaryTextBrush}">
 
     <Grid x:Name="MainGrid">
         <!-- Content Host - Dynamically loads views -->
-        <ContentControl x:Name="ViewHost"/>
+        <ContentControl x:Name="ViewHost"
+                        HorizontalContentAlignment="Stretch"
+                        VerticalContentAlignment="Stretch"/>
     </Grid>
 
 </Window>

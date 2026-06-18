@@ -2,7 +2,6 @@ using Microsoft.Extensions.DependencyInjection;
 using FM100.Core.Management;
 using FM100.Core.Management.Implementation;
 using FM100.Core.Repositories;
-using FM100.Core.Repositories;
 
 namespace FM100.Core.DependencyInjection;
 

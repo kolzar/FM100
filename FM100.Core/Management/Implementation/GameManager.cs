@@ -80,10 +80,21 @@ public class GameManager : IGameManager
 
             // Create leagues for all divisions
             var leagues = new Dictionary<Guid, League>();
+            var fixtures = new Dictionary<Guid, Fixture>();
             foreach (Division division in Enum.GetValues(typeof(Division)))
             {
-                var league = await _leagueManager.CreateNewSeasonAsync(division, 1);
+                var divisionClubIds = clubs
+                    .Where(c => c.Division == division)
+                    .Select(c => c.Id);
+
+                var league = await _leagueManager.CreateNewSeasonAsync(division, 1, divisionClubIds);
                 leagues[league.Id] = league;
+
+                var leagueFixtures = await _leagueManager.GetFixturesAsync(league.Id);
+                foreach (var fixture in leagueFixtures)
+                {
+                    fixtures[fixture.Id] = fixture;
+                }
 
                 _logger?.LogInformation("Created league for {Division} (ID: {LeagueId})", division, league.Id);
             }
@@ -97,6 +108,7 @@ public class GameManager : IGameManager
                 CurrentLeagueId = leagues.Values.FirstOrDefault(l => l.Division == selectedDivision)?.Id,
                 Clubs = clubs.ToDictionary(c => c.Id),
                 Leagues = leagues,
+                Fixtures = fixtures,
                 Difficulty = difficulty,
                 CreatedAt = DateTime.UtcNow,
                 LastSavedAt = DateTime.UtcNow

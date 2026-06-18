@@ -3,16 +3,15 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        mc:Ignorable="d"
-        Height="600" Width="800">
-    <Grid Background="#1a1a2e">
+        mc:Ignorable="d">
+    <Grid Background="{DynamicResource PrimaryBackgroundBrush}">
         <!-- Background Image -->
         <Image Source="pack://application:,,,/Assets/SplashBackground.png" 
                Stretch="UniformToFill" 
                Opacity="0.3"/>
 
         <!-- Dark Overlay -->
-        <Rectangle Fill="#000000" Opacity="0.4"/>
+        <Rectangle Fill="{DynamicResource OverlayBrush}" Opacity="0.4"/>
 
         <!-- Logo Container -->
         <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
@@ -28,7 +27,7 @@
             <TextBlock Text="Football Manager Master League" 
                        FontSize="28" 
                        FontWeight="Bold" 
-                       Foreground="White" 
+                       Foreground="{DynamicResource PrimaryTextBrush}" 
                        HorizontalAlignment="Center"
                        TextAlignment="Center"
                        Margin="0,0,0,10"/>
@@ -36,7 +35,7 @@
             <!-- Subtitle -->
             <TextBlock Text="Loading..." 
                        FontSize="16" 
-                       Foreground="#B0B0B0" 
+                       Foreground="{DynamicResource SecondaryTextBrush}" 
                        HorizontalAlignment="Center"
                        TextAlignment="Center"/>
 
@@ -44,8 +43,8 @@
             <ProgressBar x:Name="LoadingProgress" 
                          Height="4" 
                          Margin="40,30,40,0" 
-                         Background="#2a2a4e"
-                         Foreground="#00d4ff"
+                         Background="{DynamicResource TertiaryBackgroundBrush}"
+                         Foreground="{DynamicResource AccentBrush}"
                          IsIndeterminate="True"/>
         </StackPanel>
     </Grid>

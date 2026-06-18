@@ -5,8 +5,8 @@
         Height="300" 
         Width="500"
         WindowStartupLocation="CenterOwner"
-        Background="{StaticResource PrimaryBackgroundBrush}"
-        Foreground="{StaticResource PrimaryTextBrush}"
+        Background="{DynamicResource PrimaryBackgroundBrush}"
+        Foreground="{DynamicResource PrimaryTextBrush}"
         FontFamily="Segoe UI"
         ResizeMode="NoResize"
         ShowInTaskbar="False"
@@ -27,7 +27,7 @@
                    Text="Save Your Game" 
                    FontSize="{StaticResource SubtitleFontSize}" 
                    FontWeight="Bold"
-                   Foreground="{StaticResource AccentBrush}"
+                   Foreground="{DynamicResource AccentBrush}"
                    Margin="0,0,0,20"/>
 
         <!-- Save Name Label -->
@@ -42,9 +42,9 @@
                  Height="40"
                  Padding="10"
                  FontSize="{StaticResource NormalFontSize}"
-                 Background="#2d2d2d"
-                 Foreground="{StaticResource PrimaryTextBrush}"
-                 BorderBrush="{StaticResource AccentBrush}"
+                 Background="{DynamicResource InputBackgroundBrush}"
+                 Foreground="{DynamicResource PrimaryTextBrush}"
+                 BorderBrush="{DynamicResource AccentBrush}"
                  BorderThickness="1"
                  Margin="0,0,0,20"/>
 
@@ -56,7 +56,7 @@
             <TextBlock x:Name="TimestampTextBlock" 
                        Text="Loading..." 
                        FontSize="{StaticResource SmallFontSize}"
-                       Foreground="{StaticResource SecondaryTextBrush}"/>
+                       Foreground="{DynamicResource SecondaryTextBrush}"/>
         </StackPanel>
 
         <!-- Buttons -->
@@ -69,8 +69,8 @@
                     Width="100"
                     Height="40"
                     Margin="0,0,10,0"
-                    Background="{StaticResource AccentBrush}"
-                    Foreground="{StaticResource BlackBrush}"
+                    Background="{DynamicResource AccentBrush}"
+                    Foreground="{DynamicResource InverseTextBrush}"
                     FontWeight="Bold"
                     Cursor="Hand"
                     Click="SaveButton_Click"/>
@@ -78,9 +78,9 @@
                     Content="Cancel"
                     Width="100"
                     Height="40"
-                    Background="#3a3a3a"
-                    Foreground="{StaticResource PrimaryTextBrush}"
-                    BorderBrush="{StaticResource SecondaryTextBrush}"
+                    Background="{DynamicResource TertiaryBackgroundBrush}"
+                    Foreground="{DynamicResource PrimaryTextBrush}"
+                    BorderBrush="{DynamicResource SecondaryTextBrush}"
                     BorderThickness="1"
                     Cursor="Hand"
                     Click="CancelButton_Click"/>

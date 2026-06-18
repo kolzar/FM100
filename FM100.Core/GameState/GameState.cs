@@ -39,6 +39,16 @@ public class GameState
     public Dictionary<Guid, League> Leagues { get; set; } = [];
 
     /// <summary>
+    /// All generated fixtures for the active game.
+    /// </summary>
+    public Dictionary<Guid, Fixture> Fixtures { get; set; } = [];
+
+    /// <summary>
+    /// All completed matches for the active game.
+    /// </summary>
+    public Dictionary<Guid, Match> Matches { get; set; } = [];
+
+    /// <summary>
     /// Hall of Fame records.
     /// </summary>
     public HallOfFame HallOfFame { get; set; } = new();

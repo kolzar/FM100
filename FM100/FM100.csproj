@@ -11,7 +11,7 @@
 
   <ItemGroup>
     <PackageReference Include="Dapper" />
-    <PackageReference Include="System.Data.SQLite" />
+    <PackageReference Include="System.Data.SQLite.Core" />
     <PackageReference Include="Bogus" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
@@ -20,6 +20,11 @@
   <ItemGroup>
     <ProjectReference Include="..\FM100.Domain\FM100.Domain.csproj" />
     <ProjectReference Include="..\FM100.Core\FM100.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Page Remove="Views\*_new.xaml" />
+    <Compile Remove="Views\*_new.cs" />
   </ItemGroup>
 
 </Project>

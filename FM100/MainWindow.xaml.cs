@@ -90,7 +90,19 @@ namespace FM100
                 settingsBtn.Click += (s, e) => 
                 {
                     Logger.Information("MainWindow", "Settings button clicked");
-                    MessageBox.Show("Settings coming soon!", "Settings");
+                    var app = Application.Current as App;
+                    var themeManager = app?.GetServiceProvider().GetService(typeof(Services.ThemeManager)) as Services.ThemeManager;
+                    if (themeManager == null)
+                    {
+                        MessageBox.Show("Settings are not available.", "Settings", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        return;
+                    }
+
+                    var dialog = new SettingsDialog(themeManager)
+                    {
+                        Owner = this
+                    };
+                    dialog.ShowDialog();
                 };
             }
 
@@ -193,8 +205,11 @@ namespace FM100
                 return;
             }
 
+            var app = Application.Current as App;
+            var matchSimulator = app?.GetServiceProvider().GetService(typeof(IMatchSimulator)) as IMatchSimulator;
+
             var dashboard = new GameDashboardView();
-            dashboard.Initialize(_currentGameState, _gameManager);
+            dashboard.Initialize(_currentGameState, _gameManager, matchSimulator);
             ViewHost.Content = dashboard;
         }
 

@@ -9,11 +9,22 @@ namespace FM100.Core.Management.Implementation;
 public class LeagueManager : ILeagueManager
 {
     private readonly Random _random = new();
+    private readonly Dictionary<Guid, League> _leagues = [];
+    private readonly Dictionary<Guid, Fixture> _fixtures = [];
 
     /// <summary>
     /// Creates a new season with generated clubs and fixtures.
     /// </summary>
     public Task<League> CreateNewSeasonAsync(Division division, int seasonNumber)
+    {
+        var clubIds = GenerateClubIds(16);
+        return CreateNewSeasonAsync(division, seasonNumber, clubIds);
+    }
+
+    /// <summary>
+    /// Creates a new season with the provided clubs and generated fixtures.
+    /// </summary>
+    public Task<League> CreateNewSeasonAsync(Division division, int seasonNumber, IEnumerable<Guid> clubIds)
     {
         var league = new League
         {
@@ -24,11 +35,18 @@ public class LeagueManager : ILeagueManager
             IsComplete = false
         };
 
-        // Generate 16 clubs for this division
-        league.ClubIds = GenerateClubIds(16);
+        league.ClubIds = clubIds.Distinct().ToList();
 
         // Generate double round-robin fixtures
-        league.FixtureIds = GenerateFixtures(league);
+        var fixtures = GenerateFixtures(league);
+        league.FixtureIds = fixtures.Select(f => f.Id).ToList();
+        league.Standings = league.ClubIds.ToDictionary(id => id, _ => 0);
+
+        _leagues[league.Id] = league;
+        foreach (var fixture in fixtures)
+        {
+            _fixtures[fixture.Id] = fixture;
+        }
 
         return Task.FromResult(league);
     }
@@ -38,8 +56,8 @@ public class LeagueManager : ILeagueManager
     /// </summary>
     public Task<League?> GetLeagueAsync(Guid leagueId)
     {
-        // Placeholder - would fetch from database
-        return Task.FromResult<League?>(null);
+        _leagues.TryGetValue(leagueId, out var league);
+        return Task.FromResult(league);
     }
 
     /// <summary>
@@ -47,8 +65,13 @@ public class LeagueManager : ILeagueManager
     /// </summary>
     public Task<IEnumerable<Fixture>> GetFixturesAsync(Guid leagueId)
     {
-        // Placeholder - would fetch from database
-        return Task.FromResult<IEnumerable<Fixture>>(new List<Fixture>());
+        var fixtures = _fixtures.Values
+            .Where(f => f.LeagueId == leagueId)
+            .OrderBy(f => f.MatchWeek)
+            .ThenBy(f => f.ScheduledDate)
+            .AsEnumerable();
+
+        return Task.FromResult(fixtures);
     }
 
     /// <summary>
@@ -56,8 +79,13 @@ public class LeagueManager : ILeagueManager
     /// </summary>
     public Task<Fixture?> GetNextFixtureAsync(Guid leagueId)
     {
-        // Placeholder - would get from database
-        return Task.FromResult<Fixture?>(null);
+        var fixture = _fixtures.Values
+            .Where(f => f.LeagueId == leagueId && !f.IsPlayed)
+            .OrderBy(f => f.MatchWeek)
+            .ThenBy(f => f.ScheduledDate)
+            .FirstOrDefault();
+
+        return Task.FromResult(fixture);
     }
 
     /// <summary>
@@ -74,8 +102,18 @@ public class LeagueManager : ILeagueManager
     /// </summary>
     public Task<IEnumerable<(Guid ClubId, int Position)>> GetStandingsAsync(Guid leagueId)
     {
-        // Placeholder - would fetch from database
-        return Task.FromResult<IEnumerable<(Guid, int)>>(new List<(Guid, int)>());
+        if (!_leagues.TryGetValue(leagueId, out var league))
+        {
+            return Task.FromResult<IEnumerable<(Guid, int)>>(Array.Empty<(Guid, int)>());
+        }
+
+        var standings = league.ClubIds
+            .Select(clubId => (ClubId: clubId, Points: league.Standings.GetValueOrDefault(clubId)))
+            .OrderByDescending(x => x.Points)
+            .ThenBy(x => x.ClubId)
+            .Select((x, index) => (x.ClubId, Position: index + 1));
+
+        return Task.FromResult(standings);
     }
 
     /// <summary>
@@ -98,41 +136,38 @@ public class LeagueManager : ILeagueManager
     /// <summary>
     /// Generates double round-robin fixture list.
     /// </summary>
-    private List<Guid> GenerateFixtures(League league)
+    private List<Fixture> GenerateFixtures(League league)
     {
-        var fixtures = new List<Guid>();
+        var fixtures = new List<Fixture>();
         var clubs = league.ClubIds.ToList();
 
         // Double round-robin: each team plays every other team twice (home and away)
-        for (int week = 0; week < 2; week++) // 2 rounds
+        var matchWeek = 1;
+        for (int i = 0; i < clubs.Count; i++)
         {
-            for (int i = 0; i < clubs.Count; i++)
+            for (int j = i + 1; j < clubs.Count; j++)
             {
-                for (int j = i + 1; j < clubs.Count; j++)
+                var fixture1 = new Fixture
                 {
-                    // Home match
-                    var fixture1 = new Fixture
-                    {
-                        LeagueId = league.Id,
-                        HomeClubId = clubs[i],
-                        AwayClubId = clubs[j],
-                        ScheduledDate = DateTime.UtcNow.AddDays(_random.Next(1, 270)),
-                        MatchWeek = (week * clubs.Count / 2) + (i / 2)
-                    };
+                    LeagueId = league.Id,
+                    HomeClubId = clubs[i],
+                    AwayClubId = clubs[j],
+                    ScheduledDate = DateTime.UtcNow.AddDays(_random.Next(1, 270)),
+                    MatchWeek = matchWeek
+                };
 
-                    // Away match
-                    var fixture2 = new Fixture
-                    {
-                        LeagueId = league.Id,
-                        HomeClubId = clubs[j],
-                        AwayClubId = clubs[i],
-                        ScheduledDate = DateTime.UtcNow.AddDays(_random.Next(1, 270)),
-                        MatchWeek = (week * clubs.Count / 2) + (i / 2)
-                    };
+                var fixture2 = new Fixture
+                {
+                    LeagueId = league.Id,
+                    HomeClubId = clubs[j],
+                    AwayClubId = clubs[i],
+                    ScheduledDate = DateTime.UtcNow.AddDays(_random.Next(1, 270)),
+                    MatchWeek = matchWeek + clubs.Count - 1
+                };
 
-                    fixtures.Add(fixture1.Id);
-                    fixtures.Add(fixture2.Id);
-                }
+                fixtures.Add(fixture1);
+                fixtures.Add(fixture2);
+                matchWeek++;
             }
         }
 

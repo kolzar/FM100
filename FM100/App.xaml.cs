@@ -9,6 +9,7 @@ using FM100.Core.DependencyInjection;
 using FM100.Core.Logging;
 using FM100.Core.Management.Implementation;
 using FM100.Core.Repositories;
+using FM100.Services;
 
 namespace FM100
 {
@@ -30,6 +31,9 @@ namespace FM100
 
             // Register logging services first
             services.AddLoggingServices();
+
+            // Register application services
+            services.AddSingleton<ThemeManager>();
 
             // Register data layer
             services.AddDataServices();
@@ -57,6 +61,8 @@ namespace FM100
             {
                 try
                 {
+                    _serviceProvider.GetRequiredService<ThemeManager>().ApplySavedTheme();
+
                     var playerRepository = _serviceProvider.GetRequiredService<IFootballPlayerRepository>();
                     var playerSeeder = new FootballPlayerSeeder(playerRepository);
                     await playerSeeder.SeedIfEmptyAsync(23);

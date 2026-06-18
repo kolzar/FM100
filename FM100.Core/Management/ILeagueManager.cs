@@ -14,6 +14,11 @@ public interface ILeagueManager
     Task<League> CreateNewSeasonAsync(Division division, int seasonNumber);
 
     /// <summary>
+    /// Creates a new season for a known set of clubs.
+    /// </summary>
+    Task<League> CreateNewSeasonAsync(Division division, int seasonNumber, IEnumerable<Guid> clubIds);
+
+    /// <summary>
     /// Gets a league by ID.
     /// </summary>
     Task<League?> GetLeagueAsync(Guid leagueId);

@@ -3,8 +3,8 @@
 
     <!-- Menu Button Style -->
     <Style x:Key="MenuButtonStyle" TargetType="Button">
-        <Setter Property="Background" Value="#00d4ff"/>
-        <Setter Property="Foreground" Value="Black"/>
+        <Setter Property="Background" Value="{DynamicResource AccentBrush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource InverseTextBrush}"/>
         <Setter Property="FontFamily" Value="Segoe UI"/>
         <Setter Property="FontSize" Value="14"/>
         <Setter Property="FontWeight" Value="SemiBold"/>
@@ -21,7 +21,7 @@
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter Property="Background" Value="#00e6ff"/>
+                            <Setter Property="Background" Value="{DynamicResource AccentLightBrush}"/>
                             <Setter Property="RenderTransform">
                                 <Setter.Value>
                                     <ScaleTransform ScaleX="1.05" ScaleY="1.05" CenterX="50" CenterY="50"/>
@@ -29,7 +29,7 @@
                             </Setter>
                         </Trigger>
                         <Trigger Property="IsPressed" Value="True">
-                            <Setter Property="Background" Value="#00b3d4"/>
+                            <Setter Property="Background" Value="{DynamicResource AccentDarkBrush}"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -39,8 +39,8 @@
 
     <!-- Sidebar Button Style -->
     <Style x:Key="SidebarButtonStyle" TargetType="Button">
-        <Setter Property="Background" Value="#3a3a6e"/>
-        <Setter Property="Foreground" Value="White"/>
+        <Setter Property="Background" Value="{DynamicResource TertiaryBackgroundBrush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
         <Setter Property="FontFamily" Value="Segoe UI"/>
         <Setter Property="FontSize" Value="12"/>
         <Setter Property="Cursor" Value="Hand"/>
@@ -56,12 +56,12 @@
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter Property="Background" Value="#00d4ff"/>
-                            <Setter Property="Foreground" Value="Black"/>
-                            <Setter Property="BorderBrush" Value="#00d4ff"/>
+                            <Setter Property="Background" Value="{DynamicResource AccentBrush}"/>
+                            <Setter Property="Foreground" Value="{DynamicResource InverseTextBrush}"/>
+                            <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
                         </Trigger>
                         <Trigger Property="IsPressed" Value="True">
-                            <Setter Property="Background" Value="#0099aa"/>
+                            <Setter Property="Background" Value="{DynamicResource AccentDarkBrush}"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>

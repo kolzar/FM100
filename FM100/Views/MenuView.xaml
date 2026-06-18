@@ -4,15 +4,15 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d"
-             Background="#1a1a2e"
-             Foreground="White">
+             Background="{DynamicResource PrimaryBackgroundBrush}"
+             Foreground="{DynamicResource PrimaryTextBrush}">
     <Grid>
         <!-- Background Image with Overlay -->
         <Image Source="pack://application:,,,/Assets/MenuBackground.png" 
                Stretch="UniformToFill" 
                Opacity="0.2"/>
 
-        <Rectangle Fill="#000000" Opacity="0.5"/>
+        <Rectangle Fill="{DynamicResource OverlayBrush}" Opacity="0.5"/>
 
         <!-- Main Menu Content -->
         <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Width="400">
@@ -21,13 +21,13 @@
             <TextBlock Text="Football Manager" 
                        FontSize="36" 
                        FontWeight="Bold" 
-                       Foreground="White" 
+                       Foreground="{DynamicResource PrimaryTextBrush}" 
                        HorizontalAlignment="Center"
                        Margin="0,0,0,10"/>
 
             <TextBlock Text="Master League" 
                        FontSize="24" 
-                       Foreground="#00d4ff" 
+                       Foreground="{DynamicResource AccentBrush}" 
                        HorizontalAlignment="Center"
                        Margin="0,0,0,40"/>
 
@@ -38,8 +38,8 @@
                     FontSize="16" 
                     FontWeight="SemiBold"
                     Margin="0,10,0,10"
-                    Background="#00d4ff"
-                    Foreground="Black"
+                    Background="{DynamicResource AccentBrush}"
+                    Foreground="{DynamicResource InverseTextBrush}"
                     Style="{StaticResource MenuButtonStyle}"/>
 
             <!-- Load Game Button -->
@@ -49,10 +49,10 @@
                     FontSize="16" 
                     FontWeight="SemiBold"
                     Margin="0,10,0,10"
-                    Background="#3a3a6e"
-                    Foreground="White"
+                    Background="{DynamicResource TertiaryBackgroundBrush}"
+                    Foreground="{DynamicResource PrimaryTextBrush}"
                     BorderThickness="2"
-                    BorderBrush="#00d4ff"
+                    BorderBrush="{DynamicResource AccentBrush}"
                     Style="{StaticResource MenuButtonStyle}"/>
 
             <!-- Settings Button -->
@@ -62,10 +62,10 @@
                     FontSize="16" 
                     FontWeight="SemiBold"
                     Margin="0,10,0,10"
-                    Background="#3a3a6e"
-                    Foreground="White"
+                    Background="{DynamicResource TertiaryBackgroundBrush}"
+                    Foreground="{DynamicResource PrimaryTextBrush}"
                     BorderThickness="2"
-                    BorderBrush="#00d4ff"
+                    BorderBrush="{DynamicResource AccentBrush}"
                     Style="{StaticResource MenuButtonStyle}"/>
 
             <!-- Exit Button -->
@@ -75,10 +75,10 @@
                     FontSize="16" 
                     FontWeight="SemiBold"
                     Margin="0,10,0,10"
-                    Background="#3a3a6e"
-                    Foreground="White"
+                    Background="{DynamicResource TertiaryBackgroundBrush}"
+                    Foreground="{DynamicResource PrimaryTextBrush}"
                     BorderThickness="2"
-                    BorderBrush="#888888"
+                    BorderBrush="{DynamicResource MutedTextBrush}"
                     Style="{StaticResource MenuButtonStyle}"/>
 
         </StackPanel>

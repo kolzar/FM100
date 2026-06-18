@@ -1,4 +1,5 @@
 using FM100.Data.Repositories;
+using FM100.Data.Repositories.Caching;
 using FM100.Services;
 using FM100.Core.Repositories;
 using Microsoft.Extensions.DependencyInjection;
@@ -19,26 +20,25 @@ public static class DataServiceCollectionExtensions
         DatabaseInitializer.Initialize();
 
         // Register repositories (data implementations)
-        services.AddSingleton<IFootballPlayerRepository, FootballPlayerRepository>();
         // Register concrete data repositories
         services.AddSingleton<LeagueRepository>();
         services.AddSingleton<FixtureRepository>();
         services.AddSingleton<MatchRepository>();
         services.AddSingleton<GameSaveRepository>();
         services.AddSingleton<ClubRepository>();
+        services.AddSingleton<CachedClubRepository>();
+        services.AddSingleton<CachedFixtureRepository>();
+        services.AddSingleton<FootballPlayerRepository>();
 
         // Map concrete implementations to core-facing interfaces
         services.AddSingleton<ILeagueRepository>(sp => sp.GetRequiredService<LeagueRepository>());
-        services.AddSingleton<IFixtureRepository>(sp => sp.GetRequiredService<FixtureRepository>());
+        services.AddSingleton<IFixtureRepository>(sp => sp.GetRequiredService<CachedFixtureRepository>());
         services.AddSingleton<IMatchRepository>(sp => sp.GetRequiredService<MatchRepository>());
         services.AddSingleton<IGameSaveRepository>(sp => sp.GetRequiredService<GameSaveRepository>());
-        services.AddSingleton<IClubRepository>(sp => sp.GetRequiredService<ClubRepository>());
+        services.AddSingleton<IClubRepository>(sp => sp.GetRequiredService<CachedClubRepository>());
 
         // Register data interfaces where available
-        services.AddSingleton<IFootballPlayerRepository, FootballPlayerRepository>();
-
-        // Register services
-        services.AddSingleton<PlayerManagementService>();
+        services.AddSingleton<IFootballPlayerRepository>(sp => sp.GetRequiredService<FootballPlayerRepository>());
 
         // Register services
         services.AddSingleton<PlayerManagementService>();

@@ -25,39 +25,31 @@ public class GameSaveRepository : FM100.Core.Repositories.IGameSaveRepository
 
             // Check if save already exists
             var existing = await connection.QuerySingleOrDefaultAsync<dynamic>(
-                "SELECT SaveId FROM GameSaves WHERE SaveId = @SaveId",
-                new { SaveId = gameState.SaveId.ToString() });
+                "SELECT Id FROM GameSaves WHERE Id = @Id",
+                new { Id = gameState.SaveId.ToString() });
 
             var now = DateTime.UtcNow.ToString("O");
+            var playerClub = gameState.GetPlayerClub();
+            var saveData = JsonSerializer.Serialize(gameState);
             var sql = existing != null
                 ? @"UPDATE GameSaves 
-                    SET SaveName = @SaveName, PlayerClubId = @PlayerClubId, CurrentSeason = @CurrentSeason,
-                        CurrentLeagueId = @CurrentLeagueId, Clubs = @Clubs, Leagues = @Leagues, 
-                        HallOfFame = @HallOfFame, Difficulty = @Difficulty, DaysElapsed = @DaysElapsed, 
-                        LastSavedAt = @LastSavedAt
-                    WHERE SaveId = @SaveId"
+                    SET PlayerClubId = @PlayerClubId, Season = @Season, Budget = @Budget,
+                        SaveName = @SaveName, SaveData = @SaveData, UpdatedAt = @UpdatedAt
+                    WHERE Id = @Id"
                 : @"INSERT INTO GameSaves 
-                    (SaveId, SaveName, PlayerClubId, CurrentSeason, CurrentLeagueId, Clubs, Leagues, 
-                     HallOfFame, Difficulty, DaysElapsed, CreatedAt, LastSavedAt)
-                    VALUES (@SaveId, @SaveName, @PlayerClubId, @CurrentSeason, @CurrentLeagueId, @Clubs, 
-                            @Leagues, @HallOfFame, @Difficulty, @DaysElapsed, @CreatedAt, @LastSavedAt)";
-
-            var createdAt = existing != null ? now : now;
+                    (Id, PlayerClubId, Season, Budget, SaveName, SaveData, CreatedAt, UpdatedAt)
+                    VALUES (@Id, @PlayerClubId, @Season, @Budget, @SaveName, @SaveData, @CreatedAt, @UpdatedAt)";
 
             await connection.ExecuteAsync(sql, new
             {
-                SaveId = gameState.SaveId.ToString(),
+                Id = gameState.SaveId.ToString(),
                 SaveName = saveName,
                 PlayerClubId = gameState.PlayerClubId.ToString(),
-                CurrentSeason = gameState.CurrentSeason,
-                CurrentLeagueId = gameState.CurrentLeagueId?.ToString() ?? (object)DBNull.Value,
-                Clubs = JsonSerializer.Serialize(gameState.Clubs),
-                Leagues = JsonSerializer.Serialize(gameState.Leagues),
-                HallOfFame = JsonSerializer.Serialize(gameState.HallOfFame),
-                Difficulty = gameState.Difficulty,
-                DaysElapsed = gameState.DaysElapsed,
-                CreatedAt = createdAt,
-                LastSavedAt = now
+                Season = gameState.CurrentSeason,
+                Budget = playerClub?.BudgetInMillions ?? 0,
+                SaveData = saveData,
+                CreatedAt = now,
+                UpdatedAt = now
             });
         }
     }
@@ -68,8 +60,8 @@ public class GameSaveRepository : FM100.Core.Repositories.IGameSaveRepository
         {
             await connection.OpenAsync();
             var save = await connection.QuerySingleOrDefaultAsync<dynamic>(
-                "SELECT * FROM GameSaves WHERE SaveId = @SaveId",
-                new { SaveId = saveId.ToString() });
+                "SELECT * FROM GameSaves WHERE Id = @Id",
+                new { Id = saveId.ToString() });
 
             if (save == null)
                 return null;
@@ -84,7 +76,7 @@ public class GameSaveRepository : FM100.Core.Repositories.IGameSaveRepository
         {
             await connection.OpenAsync();
             var saves = await connection.QueryAsync<dynamic>(
-                "SELECT SaveId, SaveName, CurrentSeason, LastSavedAt, DaysElapsed FROM GameSaves ORDER BY LastSavedAt DESC");
+                "SELECT Id, SaveName, Season, UpdatedAt, SaveData FROM GameSaves ORDER BY UpdatedAt DESC");
 
             var result = new List<FM100.Core.Repositories.GameSaveInfo>();
 
@@ -94,23 +86,23 @@ public class GameSaveRepository : FM100.Core.Repositories.IGameSaveRepository
                 var clubName = "Unknown Club";
                 try
                 {
-                    Guid.TryParse(save.PlayerClubId?.ToString(), out Guid clubId);
-                    if (clubId != Guid.Empty)
+                    var gameState = SafeDeserializeJson<GameState>(save.SaveData?.ToString());
+                    var playerClub = gameState?.GetPlayerClub();
+                    if (playerClub != null)
                     {
-                        // We'll set a placeholder - in real usage, would query clubs
-                        clubName = "Player's Club";
+                        clubName = playerClub.Name;
                     }
                 }
                 catch { }
 
                 result.Add(new FM100.Core.Repositories.GameSaveInfo
                 {
-                    SaveId = Guid.Parse(save.SaveId.ToString()),
+                    SaveId = Guid.Parse(save.Id.ToString()),
                     SaveName = save.SaveName ?? "Unknown Save",
-                    CurrentSeason = save.CurrentSeason ?? 1,
+                    CurrentSeason = save.Season ?? 1,
                     ClubName = clubName,
-                    LastSavedAt = SafeParseDateTime(save.LastSavedAt?.ToString()) ?? DateTime.UtcNow,
-                    DaysElapsed = save.DaysElapsed ?? 0
+                    LastSavedAt = SafeParseDateTime(save.UpdatedAt?.ToString()) ?? DateTime.UtcNow,
+                    DaysElapsed = SafeDeserializeJson<GameState>(save.SaveData?.ToString())?.DaysElapsed ?? 0
                 });
             }
 
@@ -124,8 +116,8 @@ public class GameSaveRepository : FM100.Core.Repositories.IGameSaveRepository
         {
             await connection.OpenAsync();
             var count = await connection.QuerySingleAsync<int>(
-                "SELECT COUNT(*) FROM GameSaves WHERE SaveId = @SaveId",
-                new { SaveId = saveId.ToString() });
+                "SELECT COUNT(*) FROM GameSaves WHERE Id = @Id",
+                new { Id = saveId.ToString() });
 
             return count > 0;
         }
@@ -137,8 +129,8 @@ public class GameSaveRepository : FM100.Core.Repositories.IGameSaveRepository
         {
             await connection.OpenAsync();
             await connection.ExecuteAsync(
-                "DELETE FROM GameSaves WHERE SaveId = @SaveId",
-                new { SaveId = saveId.ToString() });
+                "DELETE FROM GameSaves WHERE Id = @Id",
+                new { Id = saveId.ToString() });
         }
     }
 
@@ -147,25 +139,22 @@ public class GameSaveRepository : FM100.Core.Repositories.IGameSaveRepository
     /// </summary>
     private static GameState MapToGameState(dynamic dbSave)
     {
-        Guid.TryParse(dbSave.SaveId?.ToString(), out Guid saveId);
+        var savedState = SafeDeserializeJson<GameState>(dbSave.SaveData?.ToString());
+        if (savedState != null)
+        {
+            return savedState;
+        }
+
+        Guid.TryParse(dbSave.Id?.ToString(), out Guid saveId);
         Guid.TryParse(dbSave.PlayerClubId?.ToString(), out Guid playerClubId);
-        Guid.TryParse(dbSave.CurrentLeagueId?.ToString(), out Guid currentLeagueId);
 
         return new GameState
         {
             SaveId = saveId != Guid.Empty ? saveId : Guid.NewGuid(),
             PlayerClubId = playerClubId != Guid.Empty ? playerClubId : Guid.Empty,
-            CurrentSeason = dbSave.CurrentSeason ?? 1,
-            CurrentLeagueId = currentLeagueId != Guid.Empty ? currentLeagueId : null,
-            Clubs = SafeDeserializeJson<Dictionary<Guid, FM100.Domain.Club.Club>>(dbSave.Clubs?.ToString()) 
-                ?? new Dictionary<Guid, FM100.Domain.Club.Club>(),
-            Leagues = SafeDeserializeJson<Dictionary<Guid, FM100.Domain.League.League>>(dbSave.Leagues?.ToString()) 
-                ?? new Dictionary<Guid, FM100.Domain.League.League>(),
-            HallOfFame = SafeDeserializeJson<HallOfFame>(dbSave.HallOfFame?.ToString()) ?? new HallOfFame(),
-            Difficulty = dbSave.Difficulty ?? 5,
-            DaysElapsed = dbSave.DaysElapsed ?? 0,
+            CurrentSeason = dbSave.Season ?? 1,
             CreatedAt = SafeParseDateTime(dbSave.CreatedAt?.ToString()) ?? DateTime.UtcNow,
-            LastSavedAt = SafeParseDateTime(dbSave.LastSavedAt?.ToString()) ?? DateTime.UtcNow
+            LastSavedAt = SafeParseDateTime(dbSave.UpdatedAt?.ToString()) ?? DateTime.UtcNow
         };
     }
 

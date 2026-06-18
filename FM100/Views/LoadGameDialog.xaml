@@ -5,8 +5,8 @@
         Height="500" 
         Width="600"
         WindowStartupLocation="CenterOwner"
-        Background="{StaticResource PrimaryBackgroundBrush}"
-        Foreground="{StaticResource PrimaryTextBrush}"
+        Background="{DynamicResource PrimaryBackgroundBrush}"
+        Foreground="{DynamicResource PrimaryTextBrush}"
         FontFamily="Segoe UI"
         ResizeMode="NoResize"
         ShowInTaskbar="False"
@@ -24,13 +24,13 @@
                    Text="Load Game" 
                    FontSize="{StaticResource SubtitleFontSize}" 
                    FontWeight="Bold"
-                   Foreground="{StaticResource AccentBrush}"
+                   Foreground="{DynamicResource AccentBrush}"
                    Margin="0,0,0,20"/>
 
         <!-- Saves List -->
         <Border Grid.Row="1"
-                Background="#2d2d2d"
-                BorderBrush="{StaticResource AccentBrush}"
+                Background="{DynamicResource InputBackgroundBrush}"
+                BorderBrush="{DynamicResource AccentBrush}"
                 BorderThickness="1"
                 Margin="0,0,0,20">
             <ListBox x:Name="SavesListBox"
@@ -52,10 +52,10 @@
                                 <StackPanel Grid.Column="0" VerticalAlignment="Center">
                                     <TextBlock FontSize="{StaticResource NormalFontSize}"
                                                FontWeight="Bold"
-                                               Foreground="{StaticResource AccentBrush}"
+                                               Foreground="{DynamicResource AccentBrush}"
                                                Text="{Binding SaveName}"/>
                                     <TextBlock FontSize="{StaticResource SmallFontSize}"
-                                               Foreground="{StaticResource SecondaryTextBrush}"
+                                               Foreground="{DynamicResource SecondaryTextBrush}"
                                                Margin="0,5,0,0">
                                         <Run Text="Club: "/>
                                         <Run Text="{Binding ClubName}"/>
@@ -63,7 +63,7 @@
                                         <Run Text="{Binding CurrentSeason}"/>
                                     </TextBlock>
                                     <TextBlock FontSize="{StaticResource SmallFontSize}"
-                                               Foreground="{StaticResource SecondaryTextBrush}"
+                                               Foreground="{DynamicResource SecondaryTextBrush}"
                                                Text="{Binding LastSavedAtFormatted}"
                                                Margin="0,3,0,0"/>
                                 </StackPanel>
@@ -73,8 +73,8 @@
                                         Content="Delete"
                                         Width="70"
                                         Height="30"
-                                        Background="#cc0000"
-                                        Foreground="{StaticResource PrimaryTextBrush}"
+                                        Background="{DynamicResource DangerBrush}"
+                                        Foreground="{DynamicResource InverseTextBrush}"
                                         FontSize="{StaticResource SmallFontSize}"
                                         VerticalAlignment="Center"
                                         Tag="{Binding SaveId}"
@@ -91,7 +91,7 @@
                    Grid.Row="1"
                    Text="No saved games found."
                    FontSize="{StaticResource NormalFontSize}"
-                   Foreground="{StaticResource SecondaryTextBrush}"
+                   Foreground="{DynamicResource SecondaryTextBrush}"
                    VerticalAlignment="Center"
                    HorizontalAlignment="Center"
                    Visibility="Collapsed"/>
@@ -106,8 +106,8 @@
                     Width="100"
                     Height="40"
                     Margin="0,0,10,0"
-                    Background="{StaticResource AccentBrush}"
-                    Foreground="{StaticResource BlackBrush}"
+                    Background="{DynamicResource AccentBrush}"
+                    Foreground="{DynamicResource InverseTextBrush}"
                     FontWeight="Bold"
                     Cursor="Hand"
                     Click="LoadButton_Click"/>
@@ -115,9 +115,9 @@
                     Content="Cancel"
                     Width="100"
                     Height="40"
-                    Background="#3a3a3a"
-                    Foreground="{StaticResource PrimaryTextBrush}"
-                    BorderBrush="{StaticResource SecondaryTextBrush}"
+                    Background="{DynamicResource TertiaryBackgroundBrush}"
+                    Foreground="{DynamicResource PrimaryTextBrush}"
+                    BorderBrush="{DynamicResource SecondaryTextBrush}"
                     BorderThickness="1"
                     Cursor="Hand"
                     Click="CancelButton_Click"/>
