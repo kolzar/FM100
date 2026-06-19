@@ -3,7 +3,7 @@
 ## Current Verified State
 
 - Build: `dotnet build D:\My\github\FM100\FM100.sln` passes with 0 warnings.
-- Tests: `dotnet test D:\My\github\FM100\FM100.UnitTest\FM100.UnitTest.csproj --no-restore` passes, 44/44.
+- Tests: `dotnet test D:\My\github\FM100\FM100.UnitTest\FM100.UnitTest.csproj --no-restore` passes, 47/47.
 - NuGet vulnerability scan is clean.
 - Main flow is active: Splash -> Menu -> Club Selection -> Coach Creation -> Game Dashboard.
 - Implemented recently:
@@ -19,11 +19,21 @@
   - Phase 5A-3 foundation: new games generate a 23-player squad for the selected club and the dashboard shows a roster/formation view.
   - Lineup foundation: new games generate a starting XI and bench for the selected club.
   - Lineup editing foundation: roster players can be moved between starting XI and bench from the Squad tab.
+  - Drag-and-drop lineup editing works between Starting XI and Bench, alongside START/BENCH buttons.
   - Match simulation now considers starting XI reputation, morale, and fatigue when calculating team performance.
   - Player position foundation: squads now include goalkeepers, defenders, midfielders, and forwards; default lineups respect formation shape.
   - Dashboard next-match preview shows upcoming fixture and projected strength.
   - Played matches update starter fatigue, morale, confidence, happiness, and minutes played.
   - Match-day performance/effects logic moved from WPF code-behind into Core `MatchDayService` with tests.
+  - Dashboard now shows recent results with direct access to match details.
+  - Advanced standings show P, W-D-L, GF, GA, GD, and recent form.
+  - Squad view includes a player status dashboard for minutes, fatigue risk, and low morale.
+  - Dashboard includes a season snapshot with played, remaining, win rate, and form.
+  - Dashboard includes basic season achievements.
+  - Achievements are stored in `GameState` and survive save serialization.
+  - Dashboard includes historical stats for matches, goals, points per match, and clean sheets.
+  - Season report calculations moved into Core `SeasonReportService` with tests.
+  - Injury foundation: players can become unavailable from high fatigue, lineups avoid injured starters when possible, and the Squad view shows injury status.
 
 ## Documentation Reconciliation
 
@@ -75,51 +85,51 @@ Primary goal: make the game loop feel playable beyond "simulate next match".
 
 ### 5A-2 Match Viewer
 
-- Add a match result/detail view. **Started**
-- For normal historical matches, show final score and statistics. **Started**
-- For coached/player matches, show play-by-play events. **Started**
+- Add a match result/detail view. **Complete**
+- For normal historical matches, show final score and statistics. **Complete**
+- For coached/player matches, show play-by-play events. **Complete**
 - Wire "View Details" from recent results. **Complete**
 
 ### 5A-3 Squad And Lineup Foundation
 
-- Build a squad roster view first. **Started**
-- Add formation selection. **Started**
+- Build a squad roster view first. **Complete**
+- Add formation selection. **Complete**
 - Persist selected formation/lineup. **Formation and default lineup persisted in GameState save**
-- Add basic lineup editing controls. **Started**
-- Use selected lineup in match simulation. **Started**
+- Add basic lineup editing controls. **Complete**
+- Use selected lineup in match simulation. **Complete**
 - Add player positions and role-aware default lineup selection. **Complete**
 - Move match-day lineup effects into Core service with tests. **Complete**
-- Drag-and-drop lineup editor can follow after the basic model is stable.
+- Drag-and-drop lineup editor. **Complete**
 
 ### 5A-4 Dashboard Refinement
 
-- Move toward tabbed or sectioned dashboard: Game, Squad, Standings, Results.
-- Show next player fixture clearly on the dashboard. **Started**
+- Move toward tabbed or sectioned dashboard: Game, Squad, Standings, Results. **Complete**
+- Show next player fixture clearly on the dashboard. **Complete**
+- Show recent results directly on the dashboard. **Complete**
 - Keep all content responsive to full-window layout.
 
 ## Phase 5B: Later
 
-- Advanced standings with goal difference, form, goals for/against.
-- Player performance dashboard.
-- Historical statistics.
-- Season summary reports.
-- Achievements.
+- Advanced standings with goal difference, form, goals for/against. **Complete**
+- Player performance dashboard. **Started**
+- Historical statistics. **Foundation complete**
+- Season summary reports. **Foundation complete**
+- Achievements. **Foundation complete**
 
 ## Phase 5C: Later
 
 - Transfer market.
 - Contracts.
-- Injuries.
+- Injuries. **Foundation complete**
 - Morale/motivation as gameplay systems.
 - Tactical depth.
 - Press/media events.
 
 ## Recommended Immediate Next Task
 
-Start `5A-2 Match Viewer`.
+Continue `5B/5C` feature work.
 
 Reason:
 
-- The UI can already simulate and persist matches.
-- The next user-visible payoff is opening a played match and seeing score, statistics, and timeline events.
-- Once this is visible in the dashboard, squad/lineup work can build on a more complete match loop.
+- Phase 5A is complete and verified.
+- Continue expanding 5B/5C: fuller season reports, more persistent achievements, and early transfer/contract systems.

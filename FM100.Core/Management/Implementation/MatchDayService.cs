@@ -23,7 +23,7 @@ public class MatchDayService : IMatchDayService
 
         var starters = lineup.StartingPlayerIds
             .Select(id => gameState.Players.TryGetValue(id, out var player) ? player : null)
-            .Where(player => player != null)
+            .Where(player => player is { IsInjured: false })
             .Select(player => player!)
             .ToList();
 
@@ -74,6 +74,7 @@ public class MatchDayService : IMatchDayService
             player.CurrentState.Morale = Math.Clamp(player.CurrentState.Morale + moraleDelta, 1, 20);
             player.CurrentState.Happiness = Math.Clamp(player.CurrentState.Happiness + Math.Sign(moraleDelta), 1, 20);
             player.CurrentState.Confidence = Math.Clamp(player.CurrentState.Confidence + moraleDelta, 1, 20);
+            ApplyFatigueInjuryRisk(player);
             player.CurrentState.LastUpdated = DateTime.UtcNow;
         }
 
@@ -87,5 +88,16 @@ public class MatchDayService : IMatchDayService
             player.CurrentState.Fatigue = Math.Clamp(player.CurrentState.Fatigue - 1, 1, 20);
             player.CurrentState.LastUpdated = DateTime.UtcNow;
         }
+    }
+
+    private static void ApplyFatigueInjuryRisk(FootballPlayer player)
+    {
+        if (player.IsInjured || player.CurrentState.Fatigue < 16)
+        {
+            return;
+        }
+
+        player.InjuryDaysRemaining = 7;
+        player.InjuryDescription = "Fatigue strain";
     }
 }

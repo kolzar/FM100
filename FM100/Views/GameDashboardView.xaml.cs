@@ -24,6 +24,7 @@ namespace FM100.Views
         private IMatchStatisticsRepository? _matchStatisticsRepository;
         private IFixtureRepository? _fixtureRepository;
         private IMatchDayService? _matchDayService;
+        private ISeasonReportService? _seasonReportService;
 
         public GameDashboardView()
         {
@@ -41,7 +42,8 @@ namespace FM100.Views
             IMatchEventRepository? matchEventRepository = null,
             IMatchStatisticsRepository? matchStatisticsRepository = null,
             IFixtureRepository? fixtureRepository = null,
-            IMatchDayService? matchDayService = null)
+            IMatchDayService? matchDayService = null,
+            ISeasonReportService? seasonReportService = null)
         {
             _gameState = gameState ?? throw new ArgumentNullException(nameof(gameState));
             _gameManager = gameManager;
@@ -51,6 +53,7 @@ namespace FM100.Views
             _matchStatisticsRepository = matchStatisticsRepository;
             _fixtureRepository = fixtureRepository;
             _matchDayService = matchDayService;
+            _seasonReportService = seasonReportService;
 
             RefreshUI();
         }
@@ -74,6 +77,114 @@ namespace FM100.Views
             PositionText.Text = GetCurrentStandings()
                 .FirstOrDefault(s => s.ClubId == playerClub.Id)?.Position.ToString() ?? "--";
             PopulateNextMatchSummary(playerClub);
+            PopulateSeasonSnapshot(playerClub);
+            AchievementsList.ItemsSource = BuildAchievementRows(playerClub);
+            PopulateHistoricalStats(playerClub);
+            DashboardResultsList.ItemsSource = BuildRecentResultRows(5);
+        }
+
+        private void PopulateHistoricalStats(Club playerClub)
+        {
+            if (_gameState == null)
+            {
+                return;
+            }
+
+            var report = GetSeasonReportService().BuildReport(_gameState, playerClub);
+
+            HistoryMatchesText.Text = report.Played.ToString();
+            HistoryGoalsText.Text = $"{report.GoalsFor}-{report.GoalsAgainst}";
+            HistoryPointsText.Text = report.PointsPerMatch.ToString("0.00");
+            HistoryCleanSheetsText.Text = report.CleanSheets.ToString();
+        }
+
+        private List<string> BuildAchievementRows(Club playerClub)
+        {
+            if (_gameState == null)
+            {
+                return ["No achievements unlocked yet."];
+            }
+
+            UnlockEligibleAchievements(playerClub);
+
+            var achievements = _gameState.Achievements
+                .OrderByDescending(a => a.UnlockedAt)
+                .ThenBy(a => a.Title)
+                .Select(a => $"{a.Title} - {a.Description}")
+                .ToList();
+
+            return achievements.Count == 0
+                ? ["No achievements unlocked yet."]
+                : achievements;
+        }
+
+        private void UnlockEligibleAchievements(Club playerClub)
+        {
+            if (_gameState == null)
+            {
+                return;
+            }
+
+            var played = playerClub.GetMatchesPlayed();
+            var candidates = new List<(string Key, string Title, string Description)>();
+
+            if (playerClub.SeasonWins > 0)
+            {
+                candidates.Add(("first-win", "First Win", "Won at least one match this season"));
+            }
+
+            if (played >= 3 && playerClub.SeasonLosses == 0)
+            {
+                candidates.Add(("unbeaten-run", "Unbeaten Run", "First 3+ matches without defeat"));
+            }
+
+            if (playerClub.GoalsFor >= 10)
+            {
+                candidates.Add(("scoring-form", "Scoring Form", "Reached 10 goals scored"));
+            }
+
+            if (played >= 5 && playerClub.GoalsAgainst <= played)
+            {
+                candidates.Add(("compact-defense", "Compact Defense", "One goal conceded per match or better"));
+            }
+
+            if (playerClub.GetPoints() >= 20)
+            {
+                candidates.Add(("promotion-pace", "Promotion Pace", "Reached 20 season points"));
+            }
+
+            foreach (var candidate in candidates)
+            {
+                var key = $"{_gameState.CurrentSeason}:{candidate.Key}";
+                if (_gameState.Achievements.Any(a => a.Key == key))
+                {
+                    continue;
+                }
+
+                _gameState.Achievements.Add(new AchievementRecord
+                {
+                    Key = key,
+                    Title = candidate.Title,
+                    Description = candidate.Description,
+                    Season = _gameState.CurrentSeason,
+                    UnlockedAt = DateTime.UtcNow
+                });
+            }
+        }
+
+        private void PopulateSeasonSnapshot(Club playerClub)
+        {
+            if (_gameState == null)
+            {
+                return;
+            }
+
+            var report = GetSeasonReportService().BuildReport(_gameState, playerClub);
+
+            SeasonPlayedText.Text = report.Played.ToString();
+            SeasonRemainingText.Text = report.Remaining.ToString();
+            WinRateText.Text = $"{report.WinRate}%";
+            SeasonFormText.Text = report.Form;
         }
 
         private void PopulateNextMatchSummary(Club playerClub)
@@ -173,7 +284,13 @@ namespace FM100.Views
                     ClubName = _gameState.Clubs.TryGetValue(s.ClubId, out var club) ? club.Name : "Unknown Club",
                     s.Points,
                     s.Played,
-                    GoalDifference = s.GoalDifference
+                    s.Wins,
+                    s.Draws,
+                    s.Losses,
+                    s.GoalsFor,
+                    s.GoalsAgainst,
+                    GoalDifferenceText = s.GoalDifference > 0 ? $"+{s.GoalDifference}" : s.GoalDifference.ToString(),
+                    s.Form
                 })
                 .ToList();
 
@@ -208,31 +325,38 @@ namespace FM100.Views
 
         private void PopulateResults()
         {
-            if (_gameState == null) return;
+            ResultsList.ItemsSource = BuildRecentResultRows(20);
+        }
+
+        private List<ResultRow> BuildRecentResultRows(int limit)
+        {
+            if (_gameState == null)
+                return [];
 
             var currentLeague = _gameState.GetCurrentLeague();
             if (currentLeague == null)
-                return;
+                return [];
 
-            var results = currentLeague.FixtureIds
+            return currentLeague.FixtureIds
                 .Select(id => _gameState.Fixtures.TryGetValue(id, out var fixture) ? fixture : null)
                 .Where(f => f != null && f.IsPlayed)
                 .OrderByDescending(f => f!.ScheduledDate)
-                .Take(20)
-                .Select(f => new
+                .Take(limit)
+                .Select(f =>
                 {
-                    WeekText = $"W{f!.MatchWeek}",
-                    Date = f.ScheduledDate.ToLocalTime().ToString("dd/MM/yyyy"),
-                    MatchText = $"{GetClubName(f.HomeClubId)} - {GetClubName(f.AwayClubId)}",
-                    Score = f.MatchId.HasValue && _gameState.Matches.TryGetValue(f.MatchId.Value, out var match)
+                    var score = f!.MatchId.HasValue && _gameState.Matches.TryGetValue(f.MatchId.Value, out var match)
                         ? $"{match.HomeGoals}-{match.AwayGoals}"
-                        : "-",
-                    MatchId = f.MatchId ?? Guid.Empty,
-                    HasMatchDetails = f.MatchId.HasValue
+                        : "-";
+
+                    return new ResultRow(
+                        $"W{f.MatchWeek}",
+                        f.ScheduledDate.ToLocalTime().ToString("dd/MM/yyyy"),
+                        $"{GetClubName(f.HomeClubId)} - {GetClubName(f.AwayClubId)}",
+                        score,
+                        f.MatchId ?? Guid.Empty,
+                        f.MatchId.HasValue);
                 })
                 .ToList();
-
-            ResultsList.ItemsSource = results;
         }
 
         private List<StandingRow> GetCurrentStandings()
@@ -248,11 +372,26 @@ namespace FM100.Views
                 .Select(clubId =>
                 {
                     var club = _gameState.Clubs.GetValueOrDefault(clubId);
-                    var points = club == null ? 0 : club.SeasonWins * 3 + club.SeasonDraws;
-                    var played = club == null ? 0 : club.SeasonWins + club.SeasonDraws + club.SeasonLosses;
+                    var wins = club?.SeasonWins ?? 0;
+                    var draws = club?.SeasonDraws ?? 0;
+                    var losses = club?.SeasonLosses ?? 0;
+                    var points = wins * 3 + draws;
+                    var played = wins + draws + losses;
+                    var goalsFor = club?.GoalsFor ?? 0;
+                    var goalsAgainst = club?.GoalsAgainst ?? 0;
                     var goalDifference = club == null ? 0 : club.GoalsFor - club.GoalsAgainst;
 
-                    return new StandingRow(clubId, points, played, goalDifference);
+                    return new StandingRow(
+                        clubId,
+                        points,
+                        played,
+                        wins,
+                        draws,
+                        losses,
+                        goalsFor,
+                        goalsAgainst,
+                        goalDifference,
+                        GetRecentForm(clubId));
                 })
                 .OrderByDescending(s => s.Points)
                 .ThenByDescending(s => s.GoalDifference)
@@ -286,6 +425,7 @@ namespace FM100.Views
                 .ThenBy(player => player!.ShirtNumber)
                 .ToList();
             var lineup = EnsureLineup(playerClub, players.Select(player => player!).ToList());
+            NormalizeLineup(lineup, players.Select(player => player!).ToList());
 
             var totalValue = players.Sum(player => player!.MarketValue);
             var averageMorale = players.Count == 0
@@ -298,14 +438,57 @@ namespace FM100.Views
             SquadSummaryText.Text = $"{players.Count} players | Avg reputation {averageReputation:0.#}";
             SquadMoodText.Text = $"Morale {averageMorale:0.#}/20 | Squad value EUR {totalValue}M | XI {lineup.StartingPlayerIds.Count} + Bench {lineup.SubstitutePlayerIds.Count}";
             StartingLineupList.ItemsSource = lineup.StartingPlayerIds
-                .Select((playerId, index) => FormatLineupPlayer(index + 1, playerId))
+                .Select((playerId, index) => BuildLineupPlayerRow(index + 1, playerId))
                 .ToList();
             BenchList.ItemsSource = lineup.SubstitutePlayerIds
-                .Select((playerId, index) => FormatLineupPlayer(index + 1, playerId))
+                .Select((playerId, index) => BuildLineupPlayerRow(index + 1, playerId))
                 .ToList();
+            PopulatePlayerStatus(players.Select(player => player!).ToList());
             SquadList.ItemsSource = players
                 .Select(player => new SquadPlayerRow(player!))
                 .ToList();
+        }
+
+        private void PopulatePlayerStatus(IReadOnlyCollection<FootballPlayer> players)
+        {
+            if (players.Count == 0)
+            {
+                MostUsedPlayerText.Text = "-";
+                FatigueRiskText.Text = "-";
+                LowMoraleText.Text = "-";
+                InjuryStatusText.Text = "-";
+                return;
+            }
+
+            var mostUsed = players
+                .OrderByDescending(player => player.PlayedMinutes)
+                .ThenByDescending(player => player.Reputation)
+                .First();
+            var fatigueRisk = players
+                .OrderByDescending(player => player.CurrentState.Fatigue)
+                .ThenByDescending(player => player.PlayedMinutes)
+                .First();
+            var lowMorale = players
+                .OrderBy(player => player.CurrentState.Morale)
+                .ThenByDescending(player => player.Reputation)
+                .First();
+            var injuredPlayers = players
+                .Where(player => player.IsInjured)
+                .OrderByDescending(player => player.InjuryDaysRemaining)
+                .ThenBy(player => player.ShirtNumber)
+                .ToList();
+
+            MostUsedPlayerText.Text = $"{FormatPlayerShortName(mostUsed)} | {mostUsed.PlayedMinutes} min";
+            FatigueRiskText.Text = $"{FormatPlayerShortName(fatigueRisk)} | {fatigueRisk.CurrentState.Fatigue}/20";
+            LowMoraleText.Text = $"{FormatPlayerShortName(lowMorale)} | {lowMorale.CurrentState.Morale}/20";
+            InjuryStatusText.Text = injuredPlayers.Count == 0
+                ? "All available"
+                : $"{FormatPlayerShortName(injuredPlayers[0])} | {injuredPlayers[0].InjuryDaysRemaining}d";
+        }
+
+        private static string FormatPlayerShortName(FootballPlayer player)
+        {
+            return $"#{player.ShirtNumber} {player.LastName}";
         }
 
         private TeamLineup EnsureLineup(Club playerClub, IReadOnlyCollection<FootballPlayer> players)
@@ -340,14 +523,21 @@ namespace FM100.Views
             return lineup;
         }
 
-        private string FormatLineupPlayer(int index, Guid playerId)
+        private LineupPlayerRow BuildLineupPlayerRow(int index, Guid playerId)
         {
             if (_gameState?.Players.TryGetValue(playerId, out var player) != true)
             {
-                return $"{index}. Unknown player";
+                return new LineupPlayerRow(playerId, $"{index}. Unknown player");
             }
 
-            return $"{index}. {FormatPosition(player!.Position)} #{player.ShirtNumber} {player.FirstName} {player.LastName} | Rep {player.Reputation}/20";
+            var lineupPlayer = player!;
+            var availability = lineupPlayer.IsInjured
+                ? $" | Injured {lineupPlayer.InjuryDaysRemaining}d"
+                : string.Empty;
+
+            return new LineupPlayerRow(
+                lineupPlayer.Id,
+                $"{index}. {FormatPosition(lineupPlayer.Position)} #{lineupPlayer.ShirtNumber} {lineupPlayer.FirstName} {lineupPlayer.LastName} | Rep {lineupPlayer.Reputation}/20{availability}");
         }
 
         private async void MovePlayerToStarting_Click(object sender, RoutedEventArgs e)
@@ -370,6 +560,47 @@ namespace FM100.Views
             await MovePlayerInLineupAsync(playerId, makeStarter: false);
         }
 
+        private void LineupList_PreviewMouseMove(object sender, System.Windows.Input.MouseEventArgs e)
+        {
+            if (e.LeftButton != System.Windows.Input.MouseButtonState.Pressed ||
+                sender is not ListBox listBox ||
+                listBox.SelectedItem is not LineupPlayerRow row)
+            {
+                return;
+            }
+
+            DragDrop.DoDragDrop(listBox, row.PlayerId, DragDropEffects.Move);
+        }
+
+        private async void StartingLineupList_Drop(object sender, DragEventArgs e)
+        {
+            if (TryGetDraggedPlayerId(e, out var playerId))
+            {
+                await MovePlayerInLineupAsync(playerId, makeStarter: true);
+            }
+        }
+
+        private async void BenchList_Drop(object sender, DragEventArgs e)
+        {
+            if (TryGetDraggedPlayerId(e, out var playerId))
+            {
+                await MovePlayerInLineupAsync(playerId, makeStarter: false);
+            }
+        }
+
+        private static bool TryGetDraggedPlayerId(DragEventArgs e, out Guid playerId)
+        {
+            if (e.Data.GetDataPresent(typeof(Guid)) &&
+                e.Data.GetData(typeof(Guid)) is Guid draggedPlayerId)
+            {
+                playerId = draggedPlayerId;
+                return true;
+            }
+
+            playerId = Guid.Empty;
+            return false;
+        }
+
         private async Task MovePlayerInLineupAsync(Guid playerId, bool makeStarter)
         {
             if (_gameState == null)
@@ -389,6 +620,18 @@ namespace FM100.Views
                 .Select(player => player!)
                 .ToList();
             var lineup = EnsureLineup(playerClub, players);
+
+            if (makeStarter &&
+                _gameState.Players.TryGetValue(playerId, out var selectedPlayer) &&
+                selectedPlayer.IsInjured)
+            {
+                MessageBox.Show(
+                    $"{selectedPlayer.FirstName} {selectedPlayer.LastName} is unavailable for {selectedPlayer.InjuryDaysRemaining} more days.",
+                    "Player injured",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+                return;
+            }
 
             if (makeStarter)
             {
@@ -445,6 +688,7 @@ namespace FM100.Views
 
         private static void NormalizeLineup(TeamLineup lineup, IReadOnlyCollection<FootballPlayer> players)
         {
+            var playerById = players.ToDictionary(p => p.Id);
             var validPlayerIds = players.Select(p => p.Id).ToHashSet();
             lineup.StartingPlayerIds = lineup.StartingPlayerIds
                 .Where(validPlayerIds.Contains)
@@ -455,9 +699,29 @@ namespace FM100.Views
                 .Distinct()
                 .ToList();
 
+            for (var index = 0; index < lineup.StartingPlayerIds.Count; index++)
+            {
+                var starterId = lineup.StartingPlayerIds[index];
+                if (!IsPlayerInjured(starterId, playerById))
+                {
+                    continue;
+                }
+
+                var healthySubstituteId = lineup.SubstitutePlayerIds.FirstOrDefault(id => !IsPlayerInjured(id, playerById));
+                if (healthySubstituteId == Guid.Empty)
+                {
+                    continue;
+                }
+
+                lineup.StartingPlayerIds[index] = healthySubstituteId;
+                lineup.SubstitutePlayerIds.Remove(healthySubstituteId);
+                lineup.SubstitutePlayerIds.Insert(0, starterId);
+            }
+
             var unassigned = players
                 .Where(p => !lineup.StartingPlayerIds.Contains(p.Id) && !lineup.SubstitutePlayerIds.Contains(p.Id))
-                .OrderByDescending(p => p.Reputation)
+                .OrderBy(p => p.IsInjured)
+                .ThenByDescending(p => p.Reputation)
                 .ThenByDescending(p => p.Potential)
                 .ThenBy(p => p.ShirtNumber)
                 .Select(p => p.Id)
@@ -477,8 +741,11 @@ namespace FM100.Views
 
             while (lineup.StartingPlayerIds.Count < 11 && lineup.SubstitutePlayerIds.Count > 0)
             {
-                var promotedPlayerId = lineup.SubstitutePlayerIds[0];
-                lineup.SubstitutePlayerIds.RemoveAt(0);
+                var promotedPlayerId = lineup.SubstitutePlayerIds
+                    .OrderBy(id => IsPlayerInjured(id, playerById))
+                    .ThenBy(id => playerById.TryGetValue(id, out var player) ? player.ShirtNumber : int.MaxValue)
+                    .First();
+                lineup.SubstitutePlayerIds.Remove(promotedPlayerId);
                 lineup.StartingPlayerIds.Add(promotedPlayerId);
             }
 
@@ -488,6 +755,11 @@ namespace FM100.Views
                 lineup.StartingPlayerIds.RemoveAt(lineup.StartingPlayerIds.Count - 1);
                 lineup.SubstitutePlayerIds.Insert(0, demotedPlayerId);
             }
+        }
+
+        private static bool IsPlayerInjured(Guid playerId, IReadOnlyDictionary<Guid, FootballPlayer> playerById)
+        {
+            return !playerById.TryGetValue(playerId, out var player) || player.IsInjured;
         }
 
         private void SetSelectedFormation(string formation)
@@ -532,10 +804,63 @@ namespace FM100.Views
             await SaveCurrentGameStateAsync("Formation changed but autosave failed");
         }
 
-        private sealed record StandingRow(Guid ClubId, int Points, int Played, int GoalDifference)
+        private string GetRecentForm(Guid clubId)
+        {
+            if (_gameState == null)
+            {
+                return "-";
+            }
+
+            var recent = _gameState.Fixtures.Values
+                .Where(f => f.IsPlayed &&
+                    f.MatchId.HasValue &&
+                    (f.HomeClubId == clubId || f.AwayClubId == clubId) &&
+                    _gameState.Matches.ContainsKey(f.MatchId.Value))
+                .OrderByDescending(f => f.ScheduledDate)
+                .Take(5)
+                .Select(f =>
+                {
+                    var match = _gameState.Matches[f.MatchId!.Value];
+                    var goalsFor = f.HomeClubId == clubId ? match.HomeGoals : match.AwayGoals;
+                    var goalsAgainst = f.HomeClubId == clubId ? match.AwayGoals : match.HomeGoals;
+
+                    if (goalsFor > goalsAgainst)
+                    {
+                        return "W";
+                    }
+
+                    return goalsFor == goalsAgainst ? "D" : "L";
+                })
+                .Reverse()
+                .ToList();
+
+            return recent.Count == 0 ? "-" : string.Join("", recent);
+        }
+
+        private sealed record StandingRow(
+            Guid ClubId,
+            int Points,
+            int Played,
+            int Wins,
+            int Draws,
+            int Losses,
+            int GoalsFor,
+            int GoalsAgainst,
+            int GoalDifference,
+            string Form)
         {
             public int Position { get; init; }
         }
+
+        private sealed record ResultRow(
+            string WeekText,
+            string Date,
+            string MatchText,
+            string Score,
+            Guid MatchId,
+            bool HasMatchDetails);
+
+        private sealed record LineupPlayerRow(Guid PlayerId, string DisplayText);
 
         private sealed class SquadPlayerRow
         {
@@ -549,6 +874,9 @@ namespace FM100.Views
                 ReputationText = $"Rep {player.Reputation}/20";
                 MoraleText = $"Morale {player.CurrentState.Morale}/20";
                 ValueText = $"EUR {player.MarketValue}M";
+                LoadText = player.IsInjured
+                    ? $"Injured {player.InjuryDaysRemaining}d | {player.InjuryDescription}"
+                    : $"{player.PlayedMinutes}m | Fat {player.CurrentState.Fatigue}/20";
             }
 
             public Guid PlayerId { get; }
@@ -559,6 +887,7 @@ namespace FM100.Views
             public string ReputationText { get; }
             public string MoraleText { get; }
             public string ValueText { get; }
+            public string LoadText { get; }
         }
 
         private static int GetPositionOrder(PlayerPosition position)
@@ -588,6 +917,11 @@ namespace FM100.Views
         private IMatchDayService GetMatchDayService()
         {
             return _matchDayService ??= new FM100.Core.Management.Implementation.MatchDayService();
+        }
+
+        private ISeasonReportService GetSeasonReportService()
+        {
+            return _seasonReportService ??= new FM100.Core.Management.Implementation.SeasonReportService();
         }
 
         private void PlayFixture_Click(object sender, RoutedEventArgs e)
@@ -760,6 +1094,8 @@ namespace FM100.Views
                 return;
             }
 
+            ShowOnly(ResultsContent);
+            PopulateResults();
             await ShowMatchDetailsAsync(matchId);
         }
 

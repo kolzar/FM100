@@ -71,6 +71,97 @@
                                     <Button Grid.Column="1" x:Name="DashboardPlayButton" Content="PLAY MATCH" Height="40" Width="150" HorizontalAlignment="Right" VerticalAlignment="Center" Foreground="{DynamicResource InverseTextBrush}" Background="{DynamicResource SuccessBrush}" FontSize="12" FontWeight="Bold" Cursor="Hand" Click="PlayFixture_Click"/>
                                 </Grid>
                             </Border>
+
+                            <TextBlock Text="SEASON SNAPSHOT" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource SecondaryTextBrush}" Margin="0,16,0,6"/>
+                            <Grid Margin="0,0,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Border Grid.Column="0" Background="{DynamicResource TertiaryBackgroundBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Padding="10" CornerRadius="5" Margin="0,0,6,0">
+                                    <StackPanel>
+                                        <TextBlock Text="PLAYED" FontSize="11" Foreground="{DynamicResource SecondaryTextBrush}" FontWeight="Bold"/>
+                                        <TextBlock x:Name="SeasonPlayedText" Text="0" FontSize="16" Foreground="{DynamicResource PrimaryTextBrush}" FontWeight="Bold"/>
+                                    </StackPanel>
+                                </Border>
+                                <Border Grid.Column="1" Background="{DynamicResource TertiaryBackgroundBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Padding="10" CornerRadius="5" Margin="6,0">
+                                    <StackPanel>
+                                        <TextBlock Text="REMAINING" FontSize="11" Foreground="{DynamicResource SecondaryTextBrush}" FontWeight="Bold"/>
+                                        <TextBlock x:Name="SeasonRemainingText" Text="0" FontSize="16" Foreground="{DynamicResource PrimaryTextBrush}" FontWeight="Bold"/>
+                                    </StackPanel>
+                                </Border>
+                                <Border Grid.Column="2" Background="{DynamicResource TertiaryBackgroundBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Padding="10" CornerRadius="5" Margin="6,0">
+                                    <StackPanel>
+                                        <TextBlock Text="WIN RATE" FontSize="11" Foreground="{DynamicResource SecondaryTextBrush}" FontWeight="Bold"/>
+                                        <TextBlock x:Name="WinRateText" Text="0%" FontSize="16" Foreground="{DynamicResource PrimaryTextBrush}" FontWeight="Bold"/>
+                                    </StackPanel>
+                                </Border>
+                                <Border Grid.Column="3" Background="{DynamicResource TertiaryBackgroundBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Padding="10" CornerRadius="5" Margin="6,0,0,0">
+                                    <StackPanel>
+                                        <TextBlock Text="FORM" FontSize="11" Foreground="{DynamicResource SecondaryTextBrush}" FontWeight="Bold"/>
+                                        <TextBlock x:Name="SeasonFormText" Text="-" FontSize="16" Foreground="{DynamicResource PrimaryTextBrush}" FontWeight="Bold"/>
+                                    </StackPanel>
+                                </Border>
+                            </Grid>
+
+                            <TextBlock Text="ACHIEVEMENTS" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource SecondaryTextBrush}" Margin="0,16,0,6"/>
+                            <ListBox x:Name="AchievementsList" Background="{DynamicResource PrimaryBackgroundBrush}" Foreground="{DynamicResource PrimaryTextBrush}" Height="90" BorderThickness="0"/>
+
+                            <TextBlock Text="HISTORICAL STATS" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource SecondaryTextBrush}" Margin="0,16,0,6"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Border Grid.Column="0" Background="{DynamicResource TertiaryBackgroundBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Padding="10" CornerRadius="5" Margin="0,0,6,0">
+                                    <StackPanel>
+                                        <TextBlock Text="MATCHES" FontSize="11" Foreground="{DynamicResource SecondaryTextBrush}" FontWeight="Bold"/>
+                                        <TextBlock x:Name="HistoryMatchesText" Text="0" FontSize="16" Foreground="{DynamicResource PrimaryTextBrush}" FontWeight="Bold"/>
+                                    </StackPanel>
+                                </Border>
+                                <Border Grid.Column="1" Background="{DynamicResource TertiaryBackgroundBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Padding="10" CornerRadius="5" Margin="6,0">
+                                    <StackPanel>
+                                        <TextBlock Text="GOALS" FontSize="11" Foreground="{DynamicResource SecondaryTextBrush}" FontWeight="Bold"/>
+                                        <TextBlock x:Name="HistoryGoalsText" Text="0-0" FontSize="16" Foreground="{DynamicResource PrimaryTextBrush}" FontWeight="Bold"/>
+                                    </StackPanel>
+                                </Border>
+                                <Border Grid.Column="2" Background="{DynamicResource TertiaryBackgroundBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Padding="10" CornerRadius="5" Margin="6,0">
+                                    <StackPanel>
+                                        <TextBlock Text="POINTS/MATCH" FontSize="11" Foreground="{DynamicResource SecondaryTextBrush}" FontWeight="Bold"/>
+                                        <TextBlock x:Name="HistoryPointsText" Text="0.00" FontSize="16" Foreground="{DynamicResource PrimaryTextBrush}" FontWeight="Bold"/>
+                                    </StackPanel>
+                                </Border>
+                                <Border Grid.Column="3" Background="{DynamicResource TertiaryBackgroundBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Padding="10" CornerRadius="5" Margin="6,0,0,0">
+                                    <StackPanel>
+                                        <TextBlock Text="CLEAN SHEETS" FontSize="11" Foreground="{DynamicResource SecondaryTextBrush}" FontWeight="Bold"/>
+                                        <TextBlock x:Name="HistoryCleanSheetsText" Text="0" FontSize="16" Foreground="{DynamicResource PrimaryTextBrush}" FontWeight="Bold"/>
+                                    </StackPanel>
+                                </Border>
+                            </Grid>
+
+                            <TextBlock Text="RECENT RESULTS" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource SecondaryTextBrush}" Margin="0,16,0,6"/>
+                            <ListBox x:Name="DashboardResultsList" Background="{DynamicResource PrimaryBackgroundBrush}" Foreground="{DynamicResource PrimaryTextBrush}" Height="150" BorderThickness="0">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid Margin="4">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="60"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="60"/>
+                                                <ColumnDefinition Width="90"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" Text="{Binding WeekText}" Foreground="{DynamicResource SecondaryTextBrush}" VerticalAlignment="Center"/>
+                                            <TextBlock Grid.Column="1" Text="{Binding MatchText}" Foreground="{DynamicResource PrimaryTextBrush}" VerticalAlignment="Center"/>
+                                            <TextBlock Grid.Column="2" Text="{Binding Score}" Foreground="{DynamicResource AccentBrush}" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            <Button Grid.Column="3" Content="DETAILS" Height="28" Tag="{Binding MatchId}" IsEnabled="{Binding HasMatchDetails}" Click="ViewMatchDetails_Click" Foreground="{DynamicResource InverseTextBrush}" Background="{DynamicResource AccentBrush}" FontSize="11" FontWeight="Bold" Cursor="Hand"/>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
                         </StackPanel>
                     </Border>
 
@@ -78,7 +169,64 @@
                     <Border x:Name="StandingsContent" Visibility="Collapsed" Background="{DynamicResource PanelBackgroundBrush}" Padding="20" CornerRadius="5" Margin="0,0,0,20">
                         <StackPanel>
                             <TextBlock Text="LEAGUE STANDINGS" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource AccentBrush}" Margin="0,0,0,15"/>
-                            <ListBox x:Name="StandingsList" Background="{DynamicResource PrimaryBackgroundBrush}" Foreground="{DynamicResource PrimaryTextBrush}" Height="400" BorderThickness="0"/>
+                            <Grid Margin="4,0,4,6">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="42"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="42"/>
+                                    <ColumnDefinition Width="42"/>
+                                    <ColumnDefinition Width="42"/>
+                                    <ColumnDefinition Width="42"/>
+                                    <ColumnDefinition Width="52"/>
+                                    <ColumnDefinition Width="52"/>
+                                    <ColumnDefinition Width="52"/>
+                                    <ColumnDefinition Width="52"/>
+                                    <ColumnDefinition Width="80"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="POS" Foreground="{DynamicResource SecondaryTextBrush}" FontSize="11" FontWeight="Bold"/>
+                                <TextBlock Grid.Column="1" Text="CLUB" Foreground="{DynamicResource SecondaryTextBrush}" FontSize="11" FontWeight="Bold"/>
+                                <TextBlock Grid.Column="2" Text="PTS" Foreground="{DynamicResource SecondaryTextBrush}" FontSize="11" FontWeight="Bold"/>
+                                <TextBlock Grid.Column="3" Text="P" Foreground="{DynamicResource SecondaryTextBrush}" FontSize="11" FontWeight="Bold"/>
+                                <TextBlock Grid.Column="4" Text="W" Foreground="{DynamicResource SecondaryTextBrush}" FontSize="11" FontWeight="Bold"/>
+                                <TextBlock Grid.Column="5" Text="D" Foreground="{DynamicResource SecondaryTextBrush}" FontSize="11" FontWeight="Bold"/>
+                                <TextBlock Grid.Column="6" Text="L" Foreground="{DynamicResource SecondaryTextBrush}" FontSize="11" FontWeight="Bold"/>
+                                <TextBlock Grid.Column="7" Text="GF" Foreground="{DynamicResource SecondaryTextBrush}" FontSize="11" FontWeight="Bold"/>
+                                <TextBlock Grid.Column="8" Text="GA" Foreground="{DynamicResource SecondaryTextBrush}" FontSize="11" FontWeight="Bold"/>
+                                <TextBlock Grid.Column="9" Text="GD" Foreground="{DynamicResource SecondaryTextBrush}" FontSize="11" FontWeight="Bold"/>
+                                <TextBlock Grid.Column="10" Text="FORM" Foreground="{DynamicResource SecondaryTextBrush}" FontSize="11" FontWeight="Bold"/>
+                            </Grid>
+                            <ListBox x:Name="StandingsList" Background="{DynamicResource PrimaryBackgroundBrush}" Foreground="{DynamicResource PrimaryTextBrush}" Height="400" BorderThickness="0">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid Margin="4">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="42"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="42"/>
+                                                <ColumnDefinition Width="42"/>
+                                                <ColumnDefinition Width="42"/>
+                                                <ColumnDefinition Width="42"/>
+                                                <ColumnDefinition Width="52"/>
+                                                <ColumnDefinition Width="52"/>
+                                                <ColumnDefinition Width="52"/>
+                                                <ColumnDefinition Width="52"/>
+                                                <ColumnDefinition Width="80"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" Text="{Binding Position}" Foreground="{DynamicResource AccentBrush}" FontWeight="Bold"/>
+                                            <TextBlock Grid.Column="1" Text="{Binding ClubName}" Foreground="{DynamicResource PrimaryTextBrush}" FontWeight="SemiBold"/>
+                                            <TextBlock Grid.Column="2" Text="{Binding Points}" Foreground="{DynamicResource PrimaryTextBrush}" FontWeight="Bold"/>
+                                            <TextBlock Grid.Column="3" Text="{Binding Played}" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                                            <TextBlock Grid.Column="4" Text="{Binding Wins}" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                                            <TextBlock Grid.Column="5" Text="{Binding Draws}" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                                            <TextBlock Grid.Column="6" Text="{Binding Losses}" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                                            <TextBlock Grid.Column="7" Text="{Binding GoalsFor}" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                                            <TextBlock Grid.Column="8" Text="{Binding GoalsAgainst}" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                                            <TextBlock Grid.Column="9" Text="{Binding GoalDifferenceText}" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                                            <TextBlock Grid.Column="10" Text="{Binding Form}" Foreground="{DynamicResource PrimaryTextBrush}"/>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
                         </StackPanel>
                     </Border>
 
@@ -172,12 +320,58 @@
                                 </Grid.ColumnDefinitions>
                                 <StackPanel Grid.Column="0" Margin="0,0,8,0">
                                     <TextBlock Text="STARTING XI" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource PrimaryTextBrush}" Margin="0,0,0,6"/>
-                                    <ListBox x:Name="StartingLineupList" Background="{DynamicResource PrimaryBackgroundBrush}" Foreground="{DynamicResource PrimaryTextBrush}" Height="180" BorderThickness="0"/>
+                                    <ListBox x:Name="StartingLineupList" Background="{DynamicResource PrimaryBackgroundBrush}" Foreground="{DynamicResource PrimaryTextBrush}" Height="180" BorderThickness="0" AllowDrop="True" PreviewMouseMove="LineupList_PreviewMouseMove" Drop="StartingLineupList_Drop">
+                                        <ListBox.ItemTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding DisplayText}" Margin="4"/>
+                                            </DataTemplate>
+                                        </ListBox.ItemTemplate>
+                                    </ListBox>
                                 </StackPanel>
                                 <StackPanel Grid.Column="1" Margin="8,0,0,0">
                                     <TextBlock Text="BENCH" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource PrimaryTextBrush}" Margin="0,0,0,6"/>
-                                    <ListBox x:Name="BenchList" Background="{DynamicResource PrimaryBackgroundBrush}" Foreground="{DynamicResource PrimaryTextBrush}" Height="180" BorderThickness="0"/>
+                                    <ListBox x:Name="BenchList" Background="{DynamicResource PrimaryBackgroundBrush}" Foreground="{DynamicResource PrimaryTextBrush}" Height="180" BorderThickness="0" AllowDrop="True" PreviewMouseMove="LineupList_PreviewMouseMove" Drop="BenchList_Drop">
+                                        <ListBox.ItemTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding DisplayText}" Margin="4"/>
+                                            </DataTemplate>
+                                        </ListBox.ItemTemplate>
+                                    </ListBox>
                                 </StackPanel>
+                            </Grid>
+
+                            <TextBlock Text="PLAYER STATUS" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource PrimaryTextBrush}" Margin="0,0,0,6"/>
+                            <Grid Margin="0,0,0,15">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Border Grid.Column="0" Background="{DynamicResource TertiaryBackgroundBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Padding="12" CornerRadius="5" Margin="0,0,6,0">
+                                    <StackPanel>
+                                        <TextBlock Text="MOST USED" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                                        <TextBlock x:Name="MostUsedPlayerText" Text="-" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource PrimaryTextBrush}" Margin="0,6,0,0"/>
+                                    </StackPanel>
+                                </Border>
+                                <Border Grid.Column="1" Background="{DynamicResource TertiaryBackgroundBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Padding="12" CornerRadius="5" Margin="6,0">
+                                    <StackPanel>
+                                        <TextBlock Text="FATIGUE RISK" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                                        <TextBlock x:Name="FatigueRiskText" Text="-" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource PrimaryTextBrush}" Margin="0,6,0,0"/>
+                                    </StackPanel>
+                                </Border>
+                                <Border Grid.Column="2" Background="{DynamicResource TertiaryBackgroundBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Padding="12" CornerRadius="5" Margin="6,0,0,0">
+                                    <StackPanel>
+                                        <TextBlock Text="LOW MORALE" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                                        <TextBlock x:Name="LowMoraleText" Text="-" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource PrimaryTextBrush}" Margin="0,6,0,0"/>
+                                    </StackPanel>
+                                </Border>
+                                <Border Grid.Column="3" Background="{DynamicResource TertiaryBackgroundBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Padding="12" CornerRadius="5" Margin="6,0,0,0">
+                                    <StackPanel>
+                                        <TextBlock Text="INJURIES" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                                        <TextBlock x:Name="InjuryStatusText" Text="-" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource PrimaryTextBrush}" Margin="0,6,0,0"/>
+                                    </StackPanel>
+                                </Border>
                             </Grid>
 
                             <TextBlock Text="FULL ROSTER" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource PrimaryTextBrush}" Margin="0,0,0,6"/>
@@ -192,6 +386,7 @@
                                                 <ColumnDefinition Width="90"/>
                                                 <ColumnDefinition Width="90"/>
                                                 <ColumnDefinition Width="90"/>
+                                                <ColumnDefinition Width="110"/>
                                                 <ColumnDefinition Width="84"/>
                                                 <ColumnDefinition Width="84"/>
                                             </Grid.ColumnDefinitions>
@@ -204,8 +399,9 @@
                                             <TextBlock Grid.Column="3" Text="{Binding ReputationText}" Foreground="{DynamicResource PrimaryTextBrush}" VerticalAlignment="Center"/>
                                             <TextBlock Grid.Column="4" Text="{Binding MoraleText}" Foreground="{DynamicResource PrimaryTextBrush}" VerticalAlignment="Center"/>
                                             <TextBlock Grid.Column="5" Text="{Binding ValueText}" Foreground="{DynamicResource SuccessBrush}" VerticalAlignment="Center"/>
-                                            <Button Grid.Column="6" Content="START" Height="28" Tag="{Binding PlayerId}" Click="MovePlayerToStarting_Click" Foreground="{DynamicResource InverseTextBrush}" Background="{DynamicResource AccentBrush}" FontSize="11" FontWeight="Bold" Cursor="Hand" Margin="4,0"/>
-                                            <Button Grid.Column="7" Content="BENCH" Height="28" Tag="{Binding PlayerId}" Click="MovePlayerToBench_Click" Foreground="{DynamicResource PrimaryTextBrush}" Background="{DynamicResource InputBackgroundBrush}" FontSize="11" FontWeight="Bold" Cursor="Hand" Margin="4,0"/>
+                                            <TextBlock Grid.Column="6" Text="{Binding LoadText}" Foreground="{DynamicResource SecondaryTextBrush}" VerticalAlignment="Center"/>
+                                            <Button Grid.Column="7" Content="START" Height="28" Tag="{Binding PlayerId}" Click="MovePlayerToStarting_Click" Foreground="{DynamicResource InverseTextBrush}" Background="{DynamicResource AccentBrush}" FontSize="11" FontWeight="Bold" Cursor="Hand" Margin="4,0"/>
+                                            <Button Grid.Column="8" Content="BENCH" Height="28" Tag="{Binding PlayerId}" Click="MovePlayerToBench_Click" Foreground="{DynamicResource PrimaryTextBrush}" Background="{DynamicResource InputBackgroundBrush}" FontSize="11" FontWeight="Bold" Cursor="Hand" Margin="4,0"/>
                                         </Grid>
                                     </DataTemplate>
                                 </ListBox.ItemTemplate>

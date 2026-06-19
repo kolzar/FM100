@@ -42,6 +42,22 @@ public class FootballPlayer : Person
     public int MarketValue { get; set; }
 
     /// <summary>
+    /// Number of calendar days before the player can be selected again.
+    /// Zero means the player is available.
+    /// </summary>
+    public int InjuryDaysRemaining { get; set; }
+
+    /// <summary>
+    /// Short description of the current injury, empty when available.
+    /// </summary>
+    public string InjuryDescription { get; set; } = string.Empty;
+
+    /// <summary>
+    /// True when the player should not be selected for the starting lineup.
+    /// </summary>
+    public bool IsInjured => InjuryDaysRemaining > 0;
+
+    /// <summary>
     /// Current emotional state during an active match.
     /// Null when player is not currently playing in a match.
     /// Updated in real-time during match simulation.

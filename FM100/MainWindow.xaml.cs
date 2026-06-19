@@ -212,6 +212,7 @@ namespace FM100
             var matchStatisticsRepository = app?.GetServiceProvider().GetService(typeof(IMatchStatisticsRepository)) as IMatchStatisticsRepository;
             var fixtureRepository = app?.GetServiceProvider().GetService(typeof(IFixtureRepository)) as IFixtureRepository;
             var matchDayService = app?.GetServiceProvider().GetService(typeof(IMatchDayService)) as IMatchDayService;
+            var seasonReportService = app?.GetServiceProvider().GetService(typeof(ISeasonReportService)) as ISeasonReportService;
 
             var dashboard = new GameDashboardView();
             dashboard.Initialize(
@@ -222,7 +223,8 @@ namespace FM100
                 matchEventRepository,
                 matchStatisticsRepository,
                 fixtureRepository,
-                matchDayService);
+                matchDayService,
+                seasonReportService);
             ViewHost.Content = dashboard;
         }
 

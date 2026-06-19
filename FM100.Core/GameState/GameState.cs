@@ -65,6 +65,11 @@ public class GameState
     public HallOfFame HallOfFame { get; set; } = new();
 
     /// <summary>
+    /// Career achievements unlocked in this save.
+    /// </summary>
+    public List<AchievementRecord> Achievements { get; set; } = [];
+
+    /// <summary>
     /// Game creation timestamp.
     /// </summary>
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
@@ -120,6 +125,18 @@ public class HallOfFame
     /// Best individual seasons (player -> stats).
     /// </summary>
     public Dictionary<Guid, SeasonRecord> BestSeasons { get; set; } = [];
+}
+
+/// <summary>
+/// Achievement unlocked during a career save.
+/// </summary>
+public class AchievementRecord
+{
+    public string Key { get; set; } = string.Empty;
+    public string Title { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public int Season { get; set; }
+    public DateTime UnlockedAt { get; set; } = DateTime.UtcNow;
 }
 
 /// <summary>

@@ -85,6 +85,57 @@ public class MatchDayServiceTests
         Assert.Equal(8, gameState.Players[awayStarterId].CurrentState.Morale);
     }
 
+    [Fact]
+    public void ApplyPlayerMatchEffects_WhenStarterFatigueIsHigh_AddsMinorInjury()
+    {
+        // Arrange
+        var service = new MatchDayService();
+        var homeClub = CreateClub("Home", reputation: 12);
+        var awayClub = CreateClub("Away", reputation: 12);
+        var gameState = CreateGameState(homeClub, starterReputation: 12, starterMorale: 10, starterFatigue: 15);
+        AddLineup(gameState, awayClub, starterReputation: 12, starterMorale: 10, starterFatigue: 4);
+        var homeStarterId = gameState.Lineups[homeClub.Id].StartingPlayerIds[0];
+
+        var match = new Match
+        {
+            HomeClubId = homeClub.Id,
+            AwayClubId = awayClub.Id,
+            HomeGoals = 1,
+            AwayGoals = 1,
+            Status = MatchStatus.Completed
+        };
+
+        // Act
+        service.ApplyPlayerMatchEffects(gameState, match, homeClub, awayClub);
+
+        // Assert
+        var starter = gameState.Players[homeStarterId];
+        Assert.True(starter.IsInjured);
+        Assert.Equal(7, starter.InjuryDaysRemaining);
+        Assert.Equal("Fatigue strain", starter.InjuryDescription);
+    }
+
+    [Fact]
+    public void CalculateMatchPerformance_WithOnlyInjuredStarters_UsesClubFallback()
+    {
+        // Arrange
+        var service = new MatchDayService();
+        var club = CreateClub("Home", reputation: 10);
+        var gameState = CreateGameState(club, starterReputation: 18, starterMorale: 16, starterFatigue: 2);
+
+        foreach (var playerId in gameState.Lineups[club.Id].StartingPlayerIds)
+        {
+            gameState.Players[playerId].InjuryDaysRemaining = 3;
+            gameState.Players[playerId].InjuryDescription = "Unavailable";
+        }
+
+        // Act
+        var performance = service.CalculateMatchPerformance(club, gameState);
+
+        // Assert
+        Assert.Equal(club.Reputation, performance);
+    }
+
     private static GameState CreateGameState(Club club, int starterReputation, int starterMorale, int starterFatigue)
     {
         var gameState = new GameState
