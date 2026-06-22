@@ -70,6 +70,16 @@ public class GameState
     public List<AchievementRecord> Achievements { get; set; } = [];
 
     /// <summary>
+    /// Players currently available to sign in the transfer market.
+    /// </summary>
+    public List<TransferListing> TransferMarket { get; set; } = [];
+
+    /// <summary>
+    /// Press and media events generated during the career.
+    /// </summary>
+    public List<MediaEventRecord> MediaEvents { get; set; } = [];
+
+    /// <summary>
     /// Game creation timestamp.
     /// </summary>
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
@@ -137,6 +147,36 @@ public class AchievementRecord
     public string Description { get; set; } = string.Empty;
     public int Season { get; set; }
     public DateTime UnlockedAt { get; set; } = DateTime.UtcNow;
+}
+
+/// <summary>
+/// Transfer market listing stored in the save game.
+/// </summary>
+public class TransferListing
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid PlayerId { get; set; }
+    public int AskingPriceInMillions { get; set; }
+    public int WageDemandInMillions { get; set; }
+    public int ContractYears { get; set; } = 3;
+    public DateTime ListedAt { get; set; } = DateTime.UtcNow;
+}
+
+/// <summary>
+/// Press/media event stored in the save game.
+/// </summary>
+public class MediaEventRecord
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public string Headline { get; set; } = string.Empty;
+    public string Question { get; set; } = string.Empty;
+    public int Season { get; set; }
+    public int Day { get; set; }
+    public bool IsResolved { get; set; }
+    public string Response { get; set; } = string.Empty;
+    public string Outcome { get; set; } = string.Empty;
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? ResolvedAt { get; set; }
 }
 
 /// <summary>

@@ -3,7 +3,7 @@
 ## Current Verified State
 
 - Build: `dotnet build D:\My\github\FM100\FM100.sln` passes with 0 warnings.
-- Tests: `dotnet test D:\My\github\FM100\FM100.UnitTest\FM100.UnitTest.csproj --no-restore` passes, 47/47.
+- Tests: `dotnet test D:\My\github\FM100\FM100.UnitTest\FM100.UnitTest.csproj --no-restore` passes, 72/72.
 - NuGet vulnerability scan is clean.
 - Main flow is active: Splash -> Menu -> Club Selection -> Coach Creation -> Game Dashboard.
 - Implemented recently:
@@ -34,6 +34,17 @@
   - Dashboard includes historical stats for matches, goals, points per match, and clean sheets.
   - Season report calculations moved into Core `SeasonReportService` with tests.
   - Injury foundation: players can become unavailable from high fatigue, lineups avoid injured starters when possible, and the Squad view shows injury status.
+  - Transfer/contract foundation: new saves generate a transfer pool, players have wage/contract fields, the dashboard has a Transfers tab, and signings update budget, squad, bench, and autosave.
+  - Contract renewal foundation: squad players have variable initial contract expiries, expiring contracts can be renewed from the Squad view, and renewals update budget, wage, morale, and save state.
+  - Morale/motivation foundation: players have persistent motivation, team talks can adjust morale/motivation/stress, and motivated starters improve match-day performance.
+  - Tactical depth foundation: lineups store mentality, pressing, and tempo; the Squad view can edit them; match-day performance and fatigue react to tactical choices.
+  - Press/media foundation: saves store media events, the dashboard shows press questions, and responses affect fan satisfaction plus squad morale, motivation, stress, and trust.
+  - Day progression foundation: the dashboard can advance a rest day; injuries, fatigue, stress, and anxiety recover; media storylines can refresh on the next day.
+  - Contract expiry consequences: rest-day progression now flags expiring/expired contracts and unsettled players lose morale, motivation, and coach trust.
+  - End-of-season progression foundation: completed seasons award the champion, update Hall of Fame titles, reset seasonal club/player state, resolve open media, refresh the transfer market, and generate next-season leagues/fixtures with the current clubs.
+  - Promotion/relegation foundation: end-of-season progression moves bottom clubs down and top clubs up between Serie A/B/C before generating next-season fixtures.
+  - Player-club season progression now follows the club's new division after promotion/relegation when selecting the next current league.
+  - Multi-season history view foundation: the dashboard includes a History tab with Hall of Fame titles, media archive, and achievement archive backed by `HistoryService`.
 
 ## Documentation Reconciliation
 
@@ -113,17 +124,18 @@ Primary goal: make the game loop feel playable beyond "simulate next match".
 - Advanced standings with goal difference, form, goals for/against. **Complete**
 - Player performance dashboard. **Started**
 - Historical statistics. **Foundation complete**
+- Multi-season history views. **Foundation complete**
 - Season summary reports. **Foundation complete**
 - Achievements. **Foundation complete**
 
 ## Phase 5C: Later
 
-- Transfer market.
-- Contracts.
+- Transfer market. **Foundation complete**
+- Contracts. **Renewal foundation complete**
 - Injuries. **Foundation complete**
-- Morale/motivation as gameplay systems.
-- Tactical depth.
-- Press/media events.
+- Morale/motivation as gameplay systems. **Foundation complete**
+- Tactical depth. **Foundation complete**
+- Press/media events. **Foundation complete**
 
 ## Recommended Immediate Next Task
 
@@ -132,4 +144,4 @@ Continue `5B/5C` feature work.
 Reason:
 
 - Phase 5A is complete and verified.
-- Continue expanding 5B/5C: fuller season reports, more persistent achievements, and early transfer/contract systems.
+- Continue expanding 5B/5C: deeper transfer negotiations, recurring media storylines, richer season awards, and multi-season history views.

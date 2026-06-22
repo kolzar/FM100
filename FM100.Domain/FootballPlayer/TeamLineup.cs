@@ -16,6 +16,21 @@ public class TeamLineup
     public string Formation { get; set; } = "4-3-3";
 
     /// <summary>
+    /// Overall tactical risk profile.
+    /// </summary>
+    public TacticalMentality Mentality { get; set; } = TacticalMentality.Balanced;
+
+    /// <summary>
+    /// How aggressively the team presses without the ball.
+    /// </summary>
+    public PressingIntensity Pressing { get; set; } = PressingIntensity.Medium;
+
+    /// <summary>
+    /// How quickly the team tries to move the ball.
+    /// </summary>
+    public TempoStyle Tempo { get; set; } = TempoStyle.Normal;
+
+    /// <summary>
     /// Starting eleven player IDs.
     /// </summary>
     public List<Guid> StartingPlayerIds { get; set; } = [];

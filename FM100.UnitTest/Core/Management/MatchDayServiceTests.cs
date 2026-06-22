@@ -136,6 +136,80 @@ public class MatchDayServiceTests
         Assert.Equal(club.Reputation, performance);
     }
 
+    [Fact]
+    public void CalculateMatchPerformance_WithHighlyMotivatedStarters_AddsMotivationBonus()
+    {
+        // Arrange
+        var service = new MatchDayService();
+        var club = CreateClub("Home", reputation: 10);
+        var neutralState = CreateGameState(club, starterReputation: 10, starterMorale: 10, starterFatigue: 2);
+        var motivatedState = CreateGameState(club, starterReputation: 10, starterMorale: 10, starterFatigue: 2);
+
+        foreach (var playerId in motivatedState.Lineups[club.Id].StartingPlayerIds)
+        {
+            motivatedState.Players[playerId].CurrentState.Motivation = 17;
+        }
+
+        // Act
+        var neutralPerformance = service.CalculateMatchPerformance(club, neutralState);
+        var motivatedPerformance = service.CalculateMatchPerformance(club, motivatedState);
+
+        // Assert
+        Assert.Equal(neutralPerformance + 2, motivatedPerformance);
+    }
+
+    [Fact]
+    public void CalculateMatchPerformance_WithHighPressAndTacticalStarters_AddsTacticalBonus()
+    {
+        // Arrange
+        var service = new MatchDayService();
+        var club = CreateClub("Home", reputation: 10);
+        var neutralState = CreateGameState(club, starterReputation: 10, starterMorale: 10, starterFatigue: 2);
+        var tacticalState = CreateGameState(club, starterReputation: 10, starterMorale: 10, starterFatigue: 2);
+        tacticalState.Lineups[club.Id].Pressing = PressingIntensity.High;
+
+        foreach (var playerId in tacticalState.Lineups[club.Id].StartingPlayerIds)
+        {
+            tacticalState.Players[playerId].MentalAttributes.TacticalIntelligence = 15;
+        }
+
+        // Act
+        var neutralPerformance = service.CalculateMatchPerformance(club, neutralState);
+        var tacticalPerformance = service.CalculateMatchPerformance(club, tacticalState);
+
+        // Assert
+        Assert.Equal(neutralPerformance + 1, tacticalPerformance);
+    }
+
+    [Fact]
+    public void ApplyPlayerMatchEffects_WithHighPressAndFastTempo_IncreasesStarterFatigueMore()
+    {
+        // Arrange
+        var service = new MatchDayService();
+        var homeClub = CreateClub("Home", reputation: 12);
+        var awayClub = CreateClub("Away", reputation: 12);
+        var gameState = CreateGameState(homeClub, starterReputation: 12, starterMorale: 10, starterFatigue: 4);
+        AddLineup(gameState, awayClub, starterReputation: 12, starterMorale: 10, starterFatigue: 4);
+        gameState.Lineups[homeClub.Id].Pressing = PressingIntensity.High;
+        gameState.Lineups[homeClub.Id].Tempo = TempoStyle.Fast;
+        var homeStarterId = gameState.Lineups[homeClub.Id].StartingPlayerIds[0];
+
+        var match = new Match
+        {
+            HomeClubId = homeClub.Id,
+            AwayClubId = awayClub.Id,
+            HomeGoals = 1,
+            AwayGoals = 1,
+            Status = MatchStatus.Completed
+        };
+
+        // Act
+        service.ApplyPlayerMatchEffects(gameState, match, homeClub, awayClub);
+
+        // Assert
+        Assert.Equal(8, gameState.Players[homeStarterId].CurrentState.Fatigue);
+    }
+
     private static GameState CreateGameState(Club club, int starterReputation, int starterMorale, int starterFatigue)
     {
         var gameState = new GameState
@@ -199,6 +273,7 @@ public class MatchDayServiceTests
             CurrentState = new DynamicState
             {
                 Morale = morale,
+                Motivation = 10,
                 Happiness = 10,
                 Confidence = 10,
                 Fatigue = fatigue

@@ -213,6 +213,12 @@ namespace FM100
             var fixtureRepository = app?.GetServiceProvider().GetService(typeof(IFixtureRepository)) as IFixtureRepository;
             var matchDayService = app?.GetServiceProvider().GetService(typeof(IMatchDayService)) as IMatchDayService;
             var seasonReportService = app?.GetServiceProvider().GetService(typeof(ISeasonReportService)) as ISeasonReportService;
+            var transferMarketService = app?.GetServiceProvider().GetService(typeof(ITransferMarketService)) as ITransferMarketService;
+            var contractService = app?.GetServiceProvider().GetService(typeof(IContractService)) as IContractService;
+            var teamTalkService = app?.GetServiceProvider().GetService(typeof(ITeamTalkService)) as ITeamTalkService;
+            var mediaEventService = app?.GetServiceProvider().GetService(typeof(IMediaEventService)) as IMediaEventService;
+            var gameProgressionService = app?.GetServiceProvider().GetService(typeof(IGameProgressionService)) as IGameProgressionService;
+            var historyService = app?.GetServiceProvider().GetService(typeof(IHistoryService)) as IHistoryService;
 
             var dashboard = new GameDashboardView();
             dashboard.Initialize(
@@ -224,7 +230,13 @@ namespace FM100
                 matchStatisticsRepository,
                 fixtureRepository,
                 matchDayService,
-                seasonReportService);
+                seasonReportService,
+                transferMarketService,
+                contractService,
+                teamTalkService,
+                mediaEventService,
+                gameProgressionService,
+                historyService);
             ViewHost.Content = dashboard;
         }
 

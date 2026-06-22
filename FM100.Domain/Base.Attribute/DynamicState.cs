@@ -49,6 +49,12 @@ public sealed class DynamicState
     public int Morale { get; set; } = 10;
 
     /// <summary>
+    /// Current motivation/engagement level outside the live match (1-20).
+    /// Higher values indicate stronger willingness to work and respond to coaching.
+    /// </summary>
+    public int Motivation { get; set; } = 10;
+
+    /// <summary>
     /// Confidence in own abilities (1-20).
     /// Lower values indicate self-doubt, higher values indicate self-assurance.
     /// Influences decision-making and attempt frequency (shots, passes, dribbles).

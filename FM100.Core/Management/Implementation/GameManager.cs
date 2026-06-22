@@ -81,6 +81,7 @@ public class GameManager : IGameManager
             _logger?.LogInformation("Player selected club: {ClubName} (ID: {ClubId})", playerClub.Name, playerClub.Id);
 
             var players = GeneratePlayerSquad(playerClub);
+            var transferPlayers = GenerateTransferPool(playerClub, selectedDivision);
             playerClub.PlayerIds = players.Select(p => p.Id).ToList();
             var playerLineup = CreateDefaultLineup(playerClub, players);
 
@@ -113,11 +114,12 @@ public class GameManager : IGameManager
                 CurrentSeason = 1,
                 CurrentLeagueId = leagues.Values.FirstOrDefault(l => l.Division == selectedDivision)?.Id,
                 Clubs = clubs.ToDictionary(c => c.Id),
-                Players = players.ToDictionary(p => p.Id),
+                Players = players.Concat(transferPlayers).ToDictionary(p => p.Id),
                 Lineups = new Dictionary<Guid, TeamLineup>
                 {
                     [playerClub.Id] = playerLineup
                 },
+                TransferMarket = CreateTransferListings(transferPlayers, selectedDivision),
                 Leagues = leagues,
                 Fixtures = fixtures,
                 Difficulty = difficulty,
@@ -186,10 +188,13 @@ public class GameManager : IGameManager
                 Potential = Math.Clamp(reputation + random.Next(0, 6), 1, 20),
                 Reputation = reputation,
                 MarketValue = Math.Max(1, reputation * random.Next(2, 9)),
+                WageInMillions = Math.Max(1, reputation / 4),
+                ContractExpiresSeason = 2 + random.Next(0, 4),
                 CurrentState = new DynamicState
                 {
                     Happiness = random.Next(9, 17),
                     Morale = random.Next(9, 17),
+                    Motivation = random.Next(9, 17),
                     Confidence = random.Next(8, 17),
                     Fatigue = random.Next(1, 5),
                     TeamCohesion = random.Next(9, 17),
@@ -213,6 +218,51 @@ public class GameManager : IGameManager
         }
 
         return squad;
+    }
+
+    private static List<FootballPlayer> GenerateTransferPool(Club playerClub, Division selectedDivision)
+    {
+        var marketClub = new Club
+        {
+            Id = Guid.NewGuid(),
+            Name = "Transfer Market",
+            Abbreviation = "MKT",
+            City = "Global",
+            Stadium = new Stadium { Name = "Market Arena", Capacity = 1_000 },
+            Reputation = Math.Clamp(playerClub.Reputation + 1, 1, 20),
+            Division = selectedDivision,
+            Formation = playerClub.Formation
+        };
+
+        return GeneratePlayerSquad(marketClub)
+            .Take(16)
+            .Select((player, index) =>
+            {
+                player.ShirtNumber = index + 1;
+                player.Description = "Available on the transfer market";
+                return player;
+            })
+            .ToList();
+    }
+
+    private static List<TransferListing> CreateTransferListings(IEnumerable<FootballPlayer> players, Division selectedDivision)
+    {
+        var divisionMultiplier = selectedDivision switch
+        {
+            Division.SerieA => 2,
+            Division.SerieB => 1,
+            _ => 1
+        };
+
+        return players
+            .Select(player => new TransferListing
+            {
+                PlayerId = player.Id,
+                AskingPriceInMillions = Math.Max(1, player.MarketValue + player.Reputation * divisionMultiplier),
+                WageDemandInMillions = Math.Max(1, player.Reputation / 3),
+                ContractYears = Math.Clamp(2 + player.Potential / 8, 2, 5)
+            })
+            .ToList();
     }
 
     private static TeamLineup CreateDefaultLineup(Club club, IEnumerable<FootballPlayer> players)
@@ -384,7 +434,9 @@ public class GameManager : IGameManager
             }
 
             // Check if there are unplayed fixtures remaining
-            var unplayedFixtureCount = currentLeague.FixtureIds.Count - currentLeague.CompletedMatchIds.Count;
+            var unplayedFixtureCount = currentLeague.FixtureIds
+                .Select(fixtureId => gameState.Fixtures.TryGetValue(fixtureId, out var fixture) ? fixture : null)
+                .Count(fixture => fixture is { IsPlayed: false });
 
             if (unplayedFixtureCount > 0)
             {
@@ -396,21 +448,16 @@ public class GameManager : IGameManager
                 // Season complete - advance to next
                 _logger?.LogInformation("Season {Season} complete, advancing to next season", gameState.CurrentSeason);
 
+                RecordSeasonChampion(gameState, currentLeague);
+                ApplyPromotionAndRelegation(gameState);
                 gameState.CurrentSeason++;
                 gameState.DaysElapsed += 365;
+                var nextCurrentDivision = gameState.GetPlayerClub()?.Division ?? currentLeague.Division;
 
-                // Generate new leagues for next season
-                var newLeagues = new Dictionary<Guid, League>();
-                foreach (var divisionLeague in gameState.Leagues.Values)
-                {
-                    var newLeague = await _leagueManager.CreateNewSeasonAsync(divisionLeague.Division, gameState.CurrentSeason);
-                    newLeagues[newLeague.Id] = newLeague;
-                }
-                gameState.Leagues = newLeagues;
-
-                // Update current league
-                gameState.CurrentLeagueId = gameState.Leagues
-                    .FirstOrDefault(l => l.Value.Division == currentLeague.Division).Value?.Id;
+                ResetSeasonState(gameState);
+                ResolveOpenMediaEvents(gameState);
+                RefreshTransferMarket(gameState, nextCurrentDivision);
+                await CreateNextSeasonLeaguesAsync(gameState, nextCurrentDivision);
             }
 
             await SaveGameAsync(gameState);
@@ -421,6 +468,157 @@ public class GameManager : IGameManager
             _logger?.LogError(ex, "Failed to progress season");
             throw;
         }
+    }
+
+    private async Task CreateNextSeasonLeaguesAsync(
+        FM100.Core.GameState.GameState gameState,
+        Division currentDivision)
+    {
+        foreach (Division division in Enum.GetValues(typeof(Division)))
+        {
+            var divisionClubIds = gameState.Clubs.Values
+                .Where(club => club.Division == division)
+                .Select(club => club.Id)
+                .ToList();
+
+            var newLeague = await _leagueManager.CreateNewSeasonAsync(division, gameState.CurrentSeason, divisionClubIds);
+            gameState.Leagues[newLeague.Id] = newLeague;
+
+            var leagueFixtures = await _leagueManager.GetFixturesAsync(newLeague.Id);
+            foreach (var fixture in leagueFixtures)
+            {
+                gameState.Fixtures[fixture.Id] = fixture;
+            }
+
+            if (division == currentDivision)
+            {
+                gameState.CurrentLeagueId = newLeague.Id;
+            }
+        }
+    }
+
+    private static void RecordSeasonChampion(FM100.Core.GameState.GameState gameState, League currentLeague)
+    {
+        var champion = currentLeague.ClubIds
+            .Select(clubId => gameState.Clubs.TryGetValue(clubId, out var club) ? club : null)
+            .Where(club => club != null)
+            .Select(club => club!)
+            .OrderByDescending(club => club.GetPoints())
+            .ThenByDescending(club => club.GetGoalDifference())
+            .ThenByDescending(club => club.GoalsFor)
+            .FirstOrDefault();
+
+        if (champion == null)
+        {
+            return;
+        }
+
+        champion.TitlesWon++;
+        gameState.HallOfFame.TitlesByClub[champion.Id] =
+            gameState.HallOfFame.TitlesByClub.GetValueOrDefault(champion.Id) + 1;
+    }
+
+    private static void ApplyPromotionAndRelegation(FM100.Core.GameState.GameState gameState)
+    {
+        var serieA = GetDivisionTable(gameState, Division.SerieA);
+        var serieB = GetDivisionTable(gameState, Division.SerieB);
+        var serieC = GetDivisionTable(gameState, Division.SerieC);
+        if (serieA.Count < 6 || serieB.Count < 6 || serieC.Count < 6)
+        {
+            return;
+        }
+
+        foreach (var club in serieA.TakeLast(3))
+        {
+            club.Division = Division.SerieB;
+            club.UpdatedAt = DateTime.UtcNow;
+        }
+
+        foreach (var club in serieB.Take(3))
+        {
+            club.Division = Division.SerieA;
+            club.UpdatedAt = DateTime.UtcNow;
+        }
+
+        foreach (var club in serieB.TakeLast(3))
+        {
+            club.Division = Division.SerieC;
+            club.UpdatedAt = DateTime.UtcNow;
+        }
+
+        foreach (var club in serieC.Take(3))
+        {
+            club.Division = Division.SerieB;
+            club.UpdatedAt = DateTime.UtcNow;
+        }
+    }
+
+    private static List<Club> GetDivisionTable(FM100.Core.GameState.GameState gameState, Division division)
+    {
+        return gameState.Clubs.Values
+            .Where(club => club.Division == division)
+            .OrderByDescending(club => club.GetPoints())
+            .ThenByDescending(club => club.GetGoalDifference())
+            .ThenByDescending(club => club.GoalsFor)
+            .ThenBy(club => club.Name)
+            .ToList();
+    }
+
+    private static void ResetSeasonState(FM100.Core.GameState.GameState gameState)
+    {
+        foreach (var club in gameState.Clubs.Values)
+        {
+            club.SeasonWins = 0;
+            club.SeasonDraws = 0;
+            club.SeasonLosses = 0;
+            club.GoalsFor = 0;
+            club.GoalsAgainst = 0;
+            club.UpdatedAt = DateTime.UtcNow;
+        }
+
+        foreach (var player in gameState.Players.Values)
+        {
+            player.PlayedMinutes = 0;
+            player.InjuryDaysRemaining = Math.Max(0, player.InjuryDaysRemaining - 30);
+            if (player.InjuryDaysRemaining == 0)
+            {
+                player.InjuryDescription = string.Empty;
+            }
+
+            player.CurrentState.Fatigue = Math.Clamp(player.CurrentState.Fatigue - 8, 1, 20);
+            player.CurrentState.Stress = Math.Clamp(player.CurrentState.Stress - 4, 1, 20);
+            player.CurrentState.Anxiety = Math.Clamp(player.CurrentState.Anxiety - 4, 1, 20);
+            player.CurrentState.LastUpdated = DateTime.UtcNow;
+        }
+    }
+
+    private static void ResolveOpenMediaEvents(FM100.Core.GameState.GameState gameState)
+    {
+        foreach (var mediaEvent in gameState.MediaEvents.Where(mediaEvent => !mediaEvent.IsResolved))
+        {
+            mediaEvent.IsResolved = true;
+            mediaEvent.Response = "SeasonAdvanced";
+            mediaEvent.Outcome = "The story moved on as the season changed.";
+            mediaEvent.ResolvedAt = DateTime.UtcNow;
+        }
+    }
+
+    private static void RefreshTransferMarket(FM100.Core.GameState.GameState gameState, Division currentDivision)
+    {
+        var playerClub = gameState.GetPlayerClub();
+        if (playerClub == null)
+        {
+            gameState.TransferMarket.Clear();
+            return;
+        }
+
+        var transferPlayers = GenerateTransferPool(playerClub, currentDivision);
+        foreach (var player in transferPlayers)
+        {
+            gameState.Players[player.Id] = player;
+        }
+
+        gameState.TransferMarket = CreateTransferListings(transferPlayers, currentDivision);
     }
 
     /// <summary>

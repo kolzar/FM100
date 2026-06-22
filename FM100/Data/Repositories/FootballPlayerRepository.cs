@@ -63,9 +63,9 @@ public class FootballPlayerRepository : IFootballPlayerRepository
             var sql = @"
                 INSERT INTO FootballPlayers 
                 (Id, FirstName, LastName, BirthDate, Age, Nationality, Description, Height, Weight, 
-                 ShirtNumber, Position, Potential, Reputation, MarketValue, InjuryDaysRemaining, InjuryDescription, CurrentState, MentalAttributes, CreatedAt, UpdatedAt)
+                 ShirtNumber, Position, Potential, Reputation, MarketValue, WageInMillions, ContractExpiresSeason, InjuryDaysRemaining, InjuryDescription, CurrentState, MentalAttributes, CreatedAt, UpdatedAt)
                 VALUES (@Id, @FirstName, @LastName, @BirthDate, @Age, @Nationality, @Description, @Height, @Weight,
-                        @ShirtNumber, @Position, @Potential, @Reputation, @MarketValue, @InjuryDaysRemaining, @InjuryDescription, @CurrentState, @MentalAttributes, @CreatedAt, @UpdatedAt)";
+                        @ShirtNumber, @Position, @Potential, @Reputation, @MarketValue, @WageInMillions, @ContractExpiresSeason, @InjuryDaysRemaining, @InjuryDescription, @CurrentState, @MentalAttributes, @CreatedAt, @UpdatedAt)";
 
             var dbParams = MapToDatabase(player);
             await connection.ExecuteAsync(sql, (object)dbParams);
@@ -81,9 +81,9 @@ public class FootballPlayerRepository : IFootballPlayerRepository
             var sql = @"
                 INSERT INTO FootballPlayers 
                 (Id, FirstName, LastName, BirthDate, Age, Nationality, Description, Height, Weight, 
-                 ShirtNumber, Position, Potential, Reputation, MarketValue, InjuryDaysRemaining, InjuryDescription, CurrentState, MentalAttributes, CreatedAt, UpdatedAt)
+                 ShirtNumber, Position, Potential, Reputation, MarketValue, WageInMillions, ContractExpiresSeason, InjuryDaysRemaining, InjuryDescription, CurrentState, MentalAttributes, CreatedAt, UpdatedAt)
                 VALUES (@Id, @FirstName, @LastName, @BirthDate, @Age, @Nationality, @Description, @Height, @Weight,
-                        @ShirtNumber, @Position, @Potential, @Reputation, @MarketValue, @InjuryDaysRemaining, @InjuryDescription, @CurrentState, @MentalAttributes, @CreatedAt, @UpdatedAt)";
+                        @ShirtNumber, @Position, @Potential, @Reputation, @MarketValue, @WageInMillions, @ContractExpiresSeason, @InjuryDaysRemaining, @InjuryDescription, @CurrentState, @MentalAttributes, @CreatedAt, @UpdatedAt)";
 
             var dbPlayers = players.Select(MapToDatabase).ToList();
             await connection.ExecuteAsync(sql, dbPlayers);
@@ -101,7 +101,8 @@ public class FootballPlayerRepository : IFootballPlayerRepository
                 SET FirstName = @FirstName, LastName = @LastName, BirthDate = @BirthDate, Age = @Age, 
                     Nationality = @Nationality, Description = @Description, Height = @Height, Weight = @Weight,
                     ShirtNumber = @ShirtNumber, Position = @Position, Potential = @Potential, Reputation = @Reputation, 
-                    MarketValue = @MarketValue, InjuryDaysRemaining = @InjuryDaysRemaining, InjuryDescription = @InjuryDescription,
+                    MarketValue = @MarketValue, WageInMillions = @WageInMillions, ContractExpiresSeason = @ContractExpiresSeason,
+                    InjuryDaysRemaining = @InjuryDaysRemaining, InjuryDescription = @InjuryDescription,
                     CurrentState = @CurrentState, MentalAttributes = @MentalAttributes,
                     UpdatedAt = @UpdatedAt
                 WHERE Id = @Id";
@@ -163,6 +164,8 @@ public class FootballPlayerRepository : IFootballPlayerRepository
             Potential = dbPlayer.Potential ?? 70,
             Reputation = dbPlayer.Reputation ?? 10,
             MarketValue = dbPlayer.MarketValue ?? 5,
+            WageInMillions = dbPlayer.WageInMillions ?? 0,
+            ContractExpiresSeason = dbPlayer.ContractExpiresSeason ?? 3,
             InjuryDaysRemaining = dbPlayer.InjuryDaysRemaining ?? 0,
             InjuryDescription = dbPlayer.InjuryDescription ?? string.Empty,
             CurrentState = SafeDeserializeJson<DynamicState>(dbPlayer.CurrentState?.ToString()) ?? new DynamicState(),
@@ -225,6 +228,8 @@ public class FootballPlayerRepository : IFootballPlayerRepository
             Potential = player.Potential,
             Reputation = player.Reputation,
             MarketValue = player.MarketValue,
+            WageInMillions = player.WageInMillions,
+            ContractExpiresSeason = player.ContractExpiresSeason,
             InjuryDaysRemaining = player.InjuryDaysRemaining,
             InjuryDescription = player.InjuryDescription,
             CurrentState = JsonSerializer.Serialize(player.CurrentState),

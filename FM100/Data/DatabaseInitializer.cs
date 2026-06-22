@@ -121,6 +121,8 @@ public static class DatabaseInitializer
             EnsureColumnExists(connection, "Matches", "UpdatedAt", "TEXT NOT NULL DEFAULT ''");
 
             EnsureColumnExists(connection, "FootballPlayers", "Position", "INTEGER NOT NULL DEFAULT 3");
+            EnsureColumnExists(connection, "FootballPlayers", "WageInMillions", "INTEGER NOT NULL DEFAULT 0");
+            EnsureColumnExists(connection, "FootballPlayers", "ContractExpiresSeason", "INTEGER NOT NULL DEFAULT 3");
             EnsureColumnExists(connection, "FootballPlayers", "InjuryDaysRemaining", "INTEGER NOT NULL DEFAULT 0");
             EnsureColumnExists(connection, "FootballPlayers", "InjuryDescription", "TEXT NOT NULL DEFAULT ''");
         }
@@ -189,6 +191,8 @@ public static class DatabaseInitializer
                     Potential INTEGER NOT NULL,
                     Reputation INTEGER NOT NULL,
                     MarketValue INTEGER NOT NULL,
+                    WageInMillions INTEGER NOT NULL DEFAULT 0,
+                    ContractExpiresSeason INTEGER NOT NULL DEFAULT 3,
                     InjuryDaysRemaining INTEGER NOT NULL DEFAULT 0,
                     InjuryDescription TEXT NOT NULL DEFAULT '',
                     CurrentState TEXT NOT NULL,

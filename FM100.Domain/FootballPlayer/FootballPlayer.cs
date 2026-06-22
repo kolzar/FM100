@@ -42,6 +42,16 @@ public class FootballPlayer : Person
     public int MarketValue { get; set; }
 
     /// <summary>
+    /// Current yearly wage in millions of currency units.
+    /// </summary>
+    public int WageInMillions { get; set; }
+
+    /// <summary>
+    /// Season number when the current contract expires.
+    /// </summary>
+    public int ContractExpiresSeason { get; set; } = 3;
+
+    /// <summary>
     /// Number of calendar days before the player can be selected again.
     /// Zero means the player is available.
     /// </summary>

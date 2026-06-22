@@ -25,6 +25,12 @@ namespace FM100.Views
         private IFixtureRepository? _fixtureRepository;
         private IMatchDayService? _matchDayService;
         private ISeasonReportService? _seasonReportService;
+        private ITransferMarketService? _transferMarketService;
+        private IContractService? _contractService;
+        private ITeamTalkService? _teamTalkService;
+        private IMediaEventService? _mediaEventService;
+        private IGameProgressionService? _gameProgressionService;
+        private IHistoryService? _historyService;
 
         public GameDashboardView()
         {
@@ -43,7 +49,13 @@ namespace FM100.Views
             IMatchStatisticsRepository? matchStatisticsRepository = null,
             IFixtureRepository? fixtureRepository = null,
             IMatchDayService? matchDayService = null,
-            ISeasonReportService? seasonReportService = null)
+            ISeasonReportService? seasonReportService = null,
+            ITransferMarketService? transferMarketService = null,
+            IContractService? contractService = null,
+            ITeamTalkService? teamTalkService = null,
+            IMediaEventService? mediaEventService = null,
+            IGameProgressionService? gameProgressionService = null,
+            IHistoryService? historyService = null)
         {
             _gameState = gameState ?? throw new ArgumentNullException(nameof(gameState));
             _gameManager = gameManager;
@@ -54,6 +66,12 @@ namespace FM100.Views
             _fixtureRepository = fixtureRepository;
             _matchDayService = matchDayService;
             _seasonReportService = seasonReportService;
+            _transferMarketService = transferMarketService;
+            _contractService = contractService;
+            _teamTalkService = teamTalkService;
+            _mediaEventService = mediaEventService;
+            _gameProgressionService = gameProgressionService;
+            _historyService = historyService;
 
             RefreshUI();
         }
@@ -70,6 +88,7 @@ namespace FM100.Views
             // Update header
             ClubNameText.Text = playerClub.Name;
             SeasonText.Text = _gameState.CurrentSeason.ToString();
+            DayText.Text = _gameState.DaysElapsed.ToString();
             BudgetText.Text = playerClub.BudgetInMillions.ToString();
             RecordText.Text = $"{playerClub.SeasonWins}-{playerClub.SeasonDraws}-{playerClub.SeasonLosses}";
             GoalDiffText.Text = (playerClub.GoalsFor - playerClub.GoalsAgainst).ToString();
@@ -77,6 +96,8 @@ namespace FM100.Views
             PositionText.Text = GetCurrentStandings()
                 .FirstOrDefault(s => s.ClubId == playerClub.Id)?.Position.ToString() ?? "--";
             PopulateNextMatchSummary(playerClub);
+            PopulateTeamTalkSummary(playerClub);
+            PopulateMediaEvent();
             PopulateSeasonSnapshot(playerClub);
             AchievementsList.ItemsSource = BuildAchievementRows(playerClub);
             PopulateHistoricalStats(playerClub);
@@ -96,6 +117,52 @@ namespace FM100.Views
             HistoryGoalsText.Text = $"{report.GoalsFor}-{report.GoalsAgainst}";
             HistoryPointsText.Text = report.PointsPerMatch.ToString("0.00");
             HistoryCleanSheetsText.Text = report.CleanSheets.ToString();
+        }
+
+        private void PopulateTeamTalkSummary(Club playerClub)
+        {
+            if (_gameState == null)
+            {
+                return;
+            }
+
+            var players = playerClub.PlayerIds
+                .Select(id => _gameState.Players.TryGetValue(id, out var player) ? player : null)
+                .Where(player => player != null)
+                .Select(player => player!)
+                .ToList();
+
+            if (players.Count == 0)
+            {
+                TeamTalkSummaryText.Text = "Morale -- | Motivation --";
+                return;
+            }
+
+            var averageMorale = players.Average(player => player.CurrentState.Morale);
+            var averageMotivation = players.Average(player => player.CurrentState.Motivation);
+            TeamTalkSummaryText.Text = $"Morale {averageMorale:0.#}/20 | Motivation {averageMotivation:0.#}/20";
+        }
+
+        private void PopulateMediaEvent()
+        {
+            if (_gameState == null)
+            {
+                return;
+            }
+
+            var mediaEvent = GetMediaEventService().GetOrCreateCurrentEvent(_gameState);
+            MediaEventPanel.Tag = mediaEvent.Id;
+            MediaHeadlineText.Text = mediaEvent.Headline;
+            MediaQuestionText.Text = mediaEvent.Question;
+            MediaOutcomeText.Text = mediaEvent.IsResolved ? mediaEvent.Outcome : "Awaiting response";
+            SetMediaResponseButtonsEnabled(!mediaEvent.IsResolved);
+        }
+
+        private void SetMediaResponseButtonsEnabled(bool isEnabled)
+        {
+            ProtectSquadMediaButton.IsEnabled = isEnabled;
+            ChallengeSquadMediaButton.IsEnabled = isEnabled;
+            DeflectPressureMediaButton.IsEnabled = isEnabled;
         }
 
         private List<string> BuildAchievementRows(Club playerClub)
@@ -259,6 +326,20 @@ namespace FM100.Views
             Logger.Information("GameDashboard", "Squad view shown");
         }
 
+        private void TransfersBtn_Click(object sender, RoutedEventArgs e)
+        {
+            ShowOnly(TransfersContent);
+            PopulateTransfers();
+            Logger.Information("GameDashboard", "Transfers view shown");
+        }
+
+        private void HistoryBtn_Click(object sender, RoutedEventArgs e)
+        {
+            ShowOnly(HistoryContent);
+            PopulateHistory();
+            Logger.Information("GameDashboard", "History view shown");
+        }
+
         private void ShowOnly(Border contentBorder)
         {
             DashboardContent.Visibility = Visibility.Collapsed;
@@ -266,6 +347,8 @@ namespace FM100.Views
             FixturesContent.Visibility = Visibility.Collapsed;
             ResultsContent.Visibility = Visibility.Collapsed;
             SquadContent.Visibility = Visibility.Collapsed;
+            TransfersContent.Visibility = Visibility.Collapsed;
+            HistoryContent.Visibility = Visibility.Collapsed;
 
             contentBorder.Visibility = Visibility.Visible;
         }
@@ -426,6 +509,7 @@ namespace FM100.Views
                 .ToList();
             var lineup = EnsureLineup(playerClub, players.Select(player => player!).ToList());
             NormalizeLineup(lineup, players.Select(player => player!).ToList());
+            SetSelectedTacticalInstructions(lineup);
 
             var totalValue = players.Sum(player => player!.MarketValue);
             var averageMorale = players.Count == 0
@@ -436,7 +520,7 @@ namespace FM100.Views
                 : players.Average(player => player!.Reputation);
 
             SquadSummaryText.Text = $"{players.Count} players | Avg reputation {averageReputation:0.#}";
-            SquadMoodText.Text = $"Morale {averageMorale:0.#}/20 | Squad value EUR {totalValue}M | XI {lineup.StartingPlayerIds.Count} + Bench {lineup.SubstitutePlayerIds.Count}";
+            SquadMoodText.Text = $"Morale {averageMorale:0.#}/20 | Squad value EUR {totalValue}M | {lineup.Mentality}/{lineup.Pressing}/{lineup.Tempo} | XI {lineup.StartingPlayerIds.Count} + Bench {lineup.SubstitutePlayerIds.Count}";
             StartingLineupList.ItemsSource = lineup.StartingPlayerIds
                 .Select((playerId, index) => BuildLineupPlayerRow(index + 1, playerId))
                 .ToList();
@@ -445,8 +529,66 @@ namespace FM100.Views
                 .ToList();
             PopulatePlayerStatus(players.Select(player => player!).ToList());
             SquadList.ItemsSource = players
-                .Select(player => new SquadPlayerRow(player!))
+                .Select(player => new SquadPlayerRow(player!, _gameState.CurrentSeason, GetContractService()))
                 .ToList();
+        }
+
+        private void PopulateTransfers()
+        {
+            if (_gameState == null)
+            {
+                return;
+            }
+
+            var playerClub = _gameState.GetPlayerClub();
+            if (playerClub == null)
+            {
+                return;
+            }
+
+            var candidates = GetTransferMarketService()
+                .GetCandidates(_gameState)
+                .Select(candidate => new TransferCandidateRow(candidate))
+                .ToList();
+
+            TransferBudgetText.Text = $"Budget EUR {playerClub.BudgetInMillions}M";
+            TransferMarketSummaryText.Text = candidates.Count == 0
+                ? "No players currently available"
+                : $"{candidates.Count} players available";
+            TransferMarketList.ItemsSource = candidates;
+        }
+
+        private void PopulateHistory()
+        {
+            if (_gameState == null)
+            {
+                return;
+            }
+
+            var titleRows = GetHistoryService()
+                .GetTitleHistory(_gameState)
+                .Select(entry => new HistoryTitleRow(entry))
+                .ToList();
+            TitleHistoryList.ItemsSource = titleRows.Count == 0
+                ? new List<HistoryTitleRow> { HistoryTitleRow.Empty }
+                : titleRows;
+
+            var mediaRows = GetHistoryService()
+                .GetMediaHistory(_gameState)
+                .Select(entry => new MediaStoryRow(entry))
+                .ToList();
+            MediaHistoryList.ItemsSource = mediaRows.Count == 0
+                ? new List<MediaStoryRow> { MediaStoryRow.Empty }
+                : mediaRows;
+
+            var achievementRows = _gameState.Achievements
+                .OrderByDescending(achievement => achievement.UnlockedAt)
+                .ThenBy(achievement => achievement.Title)
+                .Select(achievement => $"Season {achievement.Season} - {achievement.Title}: {achievement.Description}")
+                .ToList();
+            AchievementHistoryList.ItemsSource = achievementRows.Count == 0
+                ? new List<string> { "No achievements unlocked yet." }
+                : achievementRows;
         }
 
         private void PopulatePlayerStatus(IReadOnlyCollection<FootballPlayer> players)
@@ -489,6 +631,130 @@ namespace FM100.Views
         private static string FormatPlayerShortName(FootballPlayer player)
         {
             return $"#{player.ShirtNumber} {player.LastName}";
+        }
+
+        private async void SignTransfer_Click(object sender, RoutedEventArgs e)
+        {
+            if (_gameState == null ||
+                sender is not Button { Tag: Guid listingId })
+            {
+                return;
+            }
+
+            var result = GetTransferMarketService().SignPlayer(_gameState, listingId);
+            MessageBox.Show(
+                result.Message,
+                result.Success ? "Transfer complete" : "Transfer failed",
+                MessageBoxButton.OK,
+                result.Success ? MessageBoxImage.Information : MessageBoxImage.Warning);
+
+            if (!result.Success)
+            {
+                PopulateTransfers();
+                return;
+            }
+
+            RefreshUI();
+            PopulateTransfers();
+            PopulateSquad();
+            await SaveCurrentGameStateAsync("Transfer completed but autosave failed");
+        }
+
+        private async void RenewContract_Click(object sender, RoutedEventArgs e)
+        {
+            if (_gameState == null ||
+                sender is not Button { Tag: Guid playerId })
+            {
+                return;
+            }
+
+            var result = GetContractService().RenewContract(_gameState, playerId);
+            MessageBox.Show(
+                result.Message,
+                result.Success ? "Contract renewed" : "Renewal failed",
+                MessageBoxButton.OK,
+                result.Success ? MessageBoxImage.Information : MessageBoxImage.Warning);
+
+            if (!result.Success)
+            {
+                PopulateSquad();
+                return;
+            }
+
+            RefreshUI();
+            PopulateSquad();
+            await SaveCurrentGameStateAsync("Contract renewed but autosave failed");
+        }
+
+        private async void TeamTalk_Click(object sender, RoutedEventArgs e)
+        {
+            if (_gameState == null ||
+                sender is not Button { Tag: string styleName } ||
+                !Enum.TryParse<TeamTalkStyle>(styleName, out var style))
+            {
+                return;
+            }
+
+            var result = GetTeamTalkService().ApplyTeamTalk(_gameState, style);
+            MessageBox.Show(
+                result.Message,
+                result.Success ? "Team talk" : "Team talk failed",
+                MessageBoxButton.OK,
+                result.Success ? MessageBoxImage.Information : MessageBoxImage.Warning);
+
+            if (!result.Success)
+            {
+                return;
+            }
+
+            RefreshUI();
+            PopulateSquad();
+            await SaveCurrentGameStateAsync("Team talk applied but autosave failed");
+        }
+
+        private async void MediaResponse_Click(object sender, RoutedEventArgs e)
+        {
+            if (_gameState == null ||
+                MediaEventPanel.Tag is not Guid mediaEventId ||
+                sender is not Button { Tag: string responseName } ||
+                !Enum.TryParse<MediaResponseStyle>(responseName, out var responseStyle))
+            {
+                return;
+            }
+
+            var result = GetMediaEventService().Respond(_gameState, mediaEventId, responseStyle);
+            MessageBox.Show(
+                result.Message,
+                result.Success ? "Media response" : "Media response failed",
+                MessageBoxButton.OK,
+                result.Success ? MessageBoxImage.Information : MessageBoxImage.Warning);
+
+            RefreshUI();
+            PopulateSquad();
+
+            if (result.Success)
+            {
+                await SaveCurrentGameStateAsync("Media response applied but autosave failed");
+            }
+        }
+
+        private async void RestDay_Click(object sender, RoutedEventArgs e)
+        {
+            if (_gameState == null)
+            {
+                return;
+            }
+
+            var result = GetGameProgressionService().AdvanceDays(_gameState);
+            MessageBox.Show(
+                result.Message,
+                "Rest day",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+
+            RefreshUI();
+            PopulateSquad();
+            await SaveCurrentGameStateAsync("Rest day advanced but autosave failed");
         }
 
         private TeamLineup EnsureLineup(Club playerClub, IReadOnlyCollection<FootballPlayer> players)
@@ -776,6 +1042,27 @@ namespace FM100.Views
             FormationComboBox.SelectedIndex = 0;
         }
 
+        private void SetSelectedTacticalInstructions(TeamLineup lineup)
+        {
+            SetComboBoxSelection(MentalityComboBox, lineup.Mentality.ToString());
+            SetComboBoxSelection(PressingComboBox, lineup.Pressing.ToString());
+            SetComboBoxSelection(TempoComboBox, lineup.Tempo.ToString());
+        }
+
+        private static void SetComboBoxSelection(ComboBox comboBox, string value)
+        {
+            foreach (var item in comboBox.Items.OfType<ComboBoxItem>())
+            {
+                if (string.Equals(item.Content?.ToString(), value, StringComparison.OrdinalIgnoreCase))
+                {
+                    comboBox.SelectedItem = item;
+                    return;
+                }
+            }
+
+            comboBox.SelectedIndex = 0;
+        }
+
         private async void FormationComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (_gameState == null ||
@@ -802,6 +1089,49 @@ namespace FM100.Views
             _gameState.LastSavedAt = DateTime.UtcNow;
 
             await SaveCurrentGameStateAsync("Formation changed but autosave failed");
+        }
+
+        private async void TacticalInstruction_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_gameState == null ||
+                MentalityComboBox.SelectedItem is not ComboBoxItem mentalityItem ||
+                PressingComboBox.SelectedItem is not ComboBoxItem pressingItem ||
+                TempoComboBox.SelectedItem is not ComboBoxItem tempoItem ||
+                !Enum.TryParse<TacticalMentality>(mentalityItem.Content?.ToString(), out var mentality) ||
+                !Enum.TryParse<PressingIntensity>(pressingItem.Content?.ToString(), out var pressing) ||
+                !Enum.TryParse<TempoStyle>(tempoItem.Content?.ToString(), out var tempo))
+            {
+                return;
+            }
+
+            var playerClub = _gameState.GetPlayerClub();
+            if (playerClub == null)
+            {
+                return;
+            }
+
+            var players = playerClub.PlayerIds
+                .Select(id => _gameState.Players.TryGetValue(id, out var player) ? player : null)
+                .Where(player => player != null)
+                .Select(player => player!)
+                .ToList();
+            var lineup = EnsureLineup(playerClub, players);
+
+            if (lineup.Mentality == mentality &&
+                lineup.Pressing == pressing &&
+                lineup.Tempo == tempo)
+            {
+                return;
+            }
+
+            lineup.Mentality = mentality;
+            lineup.Pressing = pressing;
+            lineup.Tempo = tempo;
+            lineup.UpdatedAt = DateTime.UtcNow;
+            _gameState.LastSavedAt = DateTime.UtcNow;
+
+            PopulateSquad();
+            await SaveCurrentGameStateAsync("Tactical instructions changed but autosave failed");
         }
 
         private string GetRecentForm(Guid clubId)
@@ -862,9 +1192,75 @@ namespace FM100.Views
 
         private sealed record LineupPlayerRow(Guid PlayerId, string DisplayText);
 
+        private sealed class TransferCandidateRow
+        {
+            public TransferCandidateRow(TransferCandidate candidate)
+            {
+                ListingId = candidate.Listing.Id;
+                Name = $"{candidate.Player.FirstName} {candidate.Player.LastName}".Trim();
+                Description = $"{FormatPosition(candidate.Player.Position)} | Age {candidate.Player.Age} | Rep {candidate.Player.Reputation}/20 | Pot {candidate.Player.Potential}/20";
+                PriceText = $"EUR {candidate.Listing.AskingPriceInMillions}M";
+                WageText = $"Wage {candidate.Listing.WageDemandInMillions}M/y";
+                ContractText = $"{candidate.Listing.ContractYears} yrs";
+                StatusText = candidate.IsAffordable ? "Affordable" : "Too expensive";
+                CanSign = candidate.IsAffordable;
+            }
+
+            public Guid ListingId { get; }
+            public string Name { get; }
+            public string Description { get; }
+            public string PriceText { get; }
+            public string WageText { get; }
+            public string ContractText { get; }
+            public string StatusText { get; }
+            public bool CanSign { get; }
+        }
+
+        private sealed class HistoryTitleRow
+        {
+            public static HistoryTitleRow Empty { get; } = new("No titles recorded yet.", "-", "-");
+
+            public HistoryTitleRow(HistoryTitleEntry entry)
+                : this(entry.ClubName, entry.Division.ToString(), entry.Titles.ToString())
+            {
+            }
+
+            private HistoryTitleRow(string clubName, string divisionText, string titlesText)
+            {
+                ClubName = clubName;
+                DivisionText = divisionText;
+                TitlesText = titlesText;
+            }
+
+            public string ClubName { get; }
+            public string DivisionText { get; }
+            public string TitlesText { get; }
+        }
+
+        private sealed class MediaStoryRow
+        {
+            public static MediaStoryRow Empty { get; } = new("No media stories yet.", "-", string.Empty);
+
+            public MediaStoryRow(MediaStoryEntry entry)
+                : this(entry.Headline, $"Season {entry.Season} | Day {entry.Day} | {entry.Status}", entry.Outcome)
+            {
+            }
+
+            private MediaStoryRow(string headline, string metaText, string outcome)
+            {
+                Headline = headline;
+                MetaText = metaText;
+                Outcome = outcome;
+            }
+
+            public string Headline { get; }
+            public string MetaText { get; }
+            public string Outcome { get; }
+        }
+
         private sealed class SquadPlayerRow
         {
-            public SquadPlayerRow(FootballPlayer player)
+            public SquadPlayerRow(FootballPlayer player, int currentSeason, IContractService contractService)
             {
                 PlayerId = player.Id;
                 Number = player.ShirtNumber > 0 ? $"#{player.ShirtNumber}" : "--";
@@ -874,6 +1270,8 @@ namespace FM100.Views
                 ReputationText = $"Rep {player.Reputation}/20";
                 MoraleText = $"Morale {player.CurrentState.Morale}/20";
                 ValueText = $"EUR {player.MarketValue}M";
+                ContractText = $"S{player.ContractExpiresSeason} | Wage {player.WageInMillions}M";
+                CanRenew = player.ContractExpiresSeason <= currentSeason + 1;
                 LoadText = player.IsInjured
                     ? $"Injured {player.InjuryDaysRemaining}d | {player.InjuryDescription}"
                     : $"{player.PlayedMinutes}m | Fat {player.CurrentState.Fatigue}/20";
@@ -887,7 +1285,9 @@ namespace FM100.Views
             public string ReputationText { get; }
             public string MoraleText { get; }
             public string ValueText { get; }
+            public string ContractText { get; }
             public string LoadText { get; }
+            public bool CanRenew { get; }
         }
 
         private static int GetPositionOrder(PlayerPosition position)
@@ -922,6 +1322,36 @@ namespace FM100.Views
         private ISeasonReportService GetSeasonReportService()
         {
             return _seasonReportService ??= new FM100.Core.Management.Implementation.SeasonReportService();
+        }
+
+        private ITransferMarketService GetTransferMarketService()
+        {
+            return _transferMarketService ??= new FM100.Core.Management.Implementation.TransferMarketService();
+        }
+
+        private IContractService GetContractService()
+        {
+            return _contractService ??= new FM100.Core.Management.Implementation.ContractService();
+        }
+
+        private ITeamTalkService GetTeamTalkService()
+        {
+            return _teamTalkService ??= new FM100.Core.Management.Implementation.TeamTalkService();
+        }
+
+        private IMediaEventService GetMediaEventService()
+        {
+            return _mediaEventService ??= new FM100.Core.Management.Implementation.MediaEventService();
+        }
+
+        private IGameProgressionService GetGameProgressionService()
+        {
+            return _gameProgressionService ??= new FM100.Core.Management.Implementation.GameProgressionService();
+        }
+
+        private IHistoryService GetHistoryService()
+        {
+            return _historyService ??= new FM100.Core.Management.Implementation.HistoryService();
         }
 
         private void PlayFixture_Click(object sender, RoutedEventArgs e)
