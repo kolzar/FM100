@@ -9,6 +9,32 @@ namespace FM100.UnitTest.Core.Management;
 public class ContractServiceTests
 {
     [Fact]
+    public void BuildReport_SummarizesUrgentRenewalsAndPriorityPlayer()
+    {
+        // Arrange
+        var service = new ContractService();
+        var club = CreateClub(budget: 6);
+        var priority = CreatePlayer(contractExpiresSeason: 1, wage: 1);
+        priority.FirstName = "Priority";
+        priority.Reputation = 16;
+        var rotation = CreatePlayer(contractExpiresSeason: 2, wage: 1);
+        rotation.FirstName = "Rotation";
+        var safe = CreatePlayer(contractExpiresSeason: 5, wage: 1);
+        safe.FirstName = "Safe";
+        var gameState = CreateGameState(club, priority, rotation, safe);
+
+        // Act
+        var report = service.BuildReport(gameState);
+
+        // Assert
+        Assert.Equal(2, report.ExpiringSoonCount);
+        Assert.Equal(0, report.UnaffordableRenewals);
+        Assert.True(report.TotalSigningFeeInMillions > 0);
+        Assert.Contains("Priority", report.PriorityPlayerName);
+        Assert.Contains("urgent renewal", report.Summary);
+    }
+
+    [Fact]
     public void RenewContract_WhenBudgetAllows_ExtendsContractAndSpendsSigningFee()
     {
         // Arrange
@@ -63,16 +89,19 @@ public class ContractServiceTests
         Assert.True(quote.IsAffordable);
     }
 
-    private static GameState CreateGameState(Club club, FootballPlayer player)
+    private static GameState CreateGameState(Club club, params FootballPlayer[] players)
     {
-        club.PlayerIds.Add(player.Id);
+        foreach (var player in players)
+        {
+            club.PlayerIds.Add(player.Id);
+        }
 
         return new GameState
         {
             PlayerClubId = club.Id,
             CurrentSeason = 1,
             Clubs = new Dictionary<Guid, Club> { [club.Id] = club },
-            Players = new Dictionary<Guid, FootballPlayer> { [player.Id] = player }
+            Players = players.ToDictionary(player => player.Id)
         };
     }
 

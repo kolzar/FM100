@@ -11,7 +11,14 @@ public interface IGameManager
     /// <summary>
     /// Starts a new game (generates world, clubs, seasons).
     /// </summary>
-    Task<FM100.Core.GameState.GameState> StartNewGameAsync(string playerClubName, Division selectedDivision, int difficulty = 5);
+    Task<FM100.Core.GameState.GameState> StartNewGameAsync(
+        string playerClubName,
+        Division selectedDivision,
+        int difficulty = 5,
+        string managerName = "Manager",
+        string managerNationality = "Italian",
+        string preferredFormation = "4-3-3",
+        string managerPersonality = "Balanced");
 
     /// <summary>
     /// Loads a saved game.

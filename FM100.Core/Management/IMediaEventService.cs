@@ -6,5 +6,7 @@ public interface IMediaEventService
 {
     MediaEventRecord GetOrCreateCurrentEvent(GameState.GameState gameState);
 
+    MediaBrief BuildBrief(GameState.GameState gameState, MediaEventRecord mediaEvent);
+
     MediaResponseResult Respond(GameState.GameState gameState, Guid mediaEventId, MediaResponseStyle style);
 }

@@ -2,6 +2,32 @@ namespace FM100.Core.Management.Implementation;
 
 public class ContractService : IContractService
 {
+    public ContractReport BuildReport(GameState.GameState gameState)
+    {
+        var quotes = GetRenewalQuotes(gameState);
+        var expiringSoon = quotes
+            .Where(quote => quote.IsExpiringSoon)
+            .ToList();
+        var priority = expiringSoon
+            .OrderBy(quote => quote.Player.ContractExpiresSeason)
+            .ThenByDescending(quote => quote.Player.Reputation)
+            .FirstOrDefault();
+        var totalSigningFee = expiringSoon.Sum(quote => quote.SigningFeeInMillions);
+        var unaffordable = expiringSoon.Count(quote => !quote.IsAffordable);
+        var priorityName = priority == null
+            ? "-"
+            : $"{priority.Player.FirstName} {priority.Player.LastName}".Trim();
+
+        return new ContractReport(
+            expiringSoon.Count,
+            unaffordable,
+            totalSigningFee,
+            priorityName,
+            expiringSoon.Count == 0
+                ? "No urgent renewals."
+                : $"{expiringSoon.Count} urgent renewal(s) | EUR {totalSigningFee}M total | Priority {priorityName}");
+    }
+
     public IReadOnlyList<ContractRenewalQuote> GetRenewalQuotes(GameState.GameState gameState)
     {
         var playerClub = gameState.GetPlayerClub();

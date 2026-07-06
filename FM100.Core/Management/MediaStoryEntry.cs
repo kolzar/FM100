@@ -5,4 +5,12 @@ public sealed record MediaStoryEntry(
     string Status,
     string Outcome,
     int Season,
-    int Day);
+    int Day,
+    string StorylineKey,
+    int StorylineStage,
+    int PressureLevel,
+    string RecommendedResponse,
+    string RiskLabel,
+    int Effectiveness,
+    int MediaReputationChange,
+    int FanSatisfactionChange);

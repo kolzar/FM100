@@ -7,4 +7,6 @@ public class TeamTalkResult
     public int AffectedPlayers { get; init; }
     public decimal AverageMorale { get; init; }
     public decimal AverageMotivation { get; init; }
+    public int Effectiveness { get; init; }
+    public int CohesionScore { get; init; }
 }

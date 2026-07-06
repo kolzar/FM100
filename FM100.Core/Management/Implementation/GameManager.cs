@@ -14,10 +14,22 @@ namespace FM100.Core.Management.Implementation;
 /// </summary>
 public class GameManager : IGameManager
 {
+    private const int MaximumCareerSeasons = 100;
     private readonly ILeagueManager _leagueManager;
     private readonly ClubGenerator _clubGenerator;
     private readonly IClubRepository _clubRepository;
     private readonly FM100.Core.Repositories.IGameSaveRepository? _gameSaveRepository;
+    private readonly ISeasonAwardService _seasonAwardService;
+    private readonly IPlayerDevelopmentService _playerDevelopmentService;
+    private readonly ISquadLifecycleService _squadLifecycleService;
+    private readonly IAiTransferService _aiTransferService;
+    private readonly IContractLifecycleService _contractLifecycleService;
+    private readonly ISeasonFinanceService _seasonFinanceService;
+    private readonly IIndividualRecordService _individualRecordService;
+    private readonly ILeagueTableArchiveService _leagueTableArchiveService;
+    private readonly IAchievementService _achievementService;
+    private readonly IStaffLifecycleService _staffLifecycleService;
+    private readonly IHistoricalWorldGenerator _historicalWorldGenerator;
     private readonly ILogger<GameManager>? _logger;
 
     /// <summary>
@@ -31,12 +43,34 @@ public class GameManager : IGameManager
         ClubGenerator clubGenerator,
         IClubRepository clubRepository,
         FM100.Core.Repositories.IGameSaveRepository? gameSaveRepository = null,
+        ISeasonAwardService? seasonAwardService = null,
+        IPlayerDevelopmentService? playerDevelopmentService = null,
+        ISquadLifecycleService? squadLifecycleService = null,
+        IAiTransferService? aiTransferService = null,
+        IContractLifecycleService? contractLifecycleService = null,
+        ISeasonFinanceService? seasonFinanceService = null,
+        IIndividualRecordService? individualRecordService = null,
+        ILeagueTableArchiveService? leagueTableArchiveService = null,
+        IAchievementService? achievementService = null,
+        IStaffLifecycleService? staffLifecycleService = null,
+        IHistoricalWorldGenerator? historicalWorldGenerator = null,
         ILogger<GameManager>? logger = null)
     {
         _leagueManager = leagueManager ?? throw new ArgumentNullException(nameof(leagueManager));
         _clubGenerator = clubGenerator ?? throw new ArgumentNullException(nameof(clubGenerator));
         _clubRepository = clubRepository ?? throw new ArgumentNullException(nameof(clubRepository));
         _gameSaveRepository = gameSaveRepository;
+        _seasonAwardService = seasonAwardService ?? new SeasonAwardService();
+        _playerDevelopmentService = playerDevelopmentService ?? new PlayerDevelopmentService();
+        _squadLifecycleService = squadLifecycleService ?? new SquadLifecycleService();
+        _aiTransferService = aiTransferService ?? new AiTransferService();
+        _contractLifecycleService = contractLifecycleService ?? new ContractLifecycleService();
+        _seasonFinanceService = seasonFinanceService ?? new SeasonFinanceService();
+        _individualRecordService = individualRecordService ?? new IndividualRecordService();
+        _leagueTableArchiveService = leagueTableArchiveService ?? new LeagueTableArchiveService();
+        _achievementService = achievementService ?? new AchievementService();
+        _staffLifecycleService = staffLifecycleService ?? new StaffLifecycleService();
+        _historicalWorldGenerator = historicalWorldGenerator ?? new HistoricalWorldGenerator();
         _logger = logger;
     }
 
@@ -46,7 +80,11 @@ public class GameManager : IGameManager
     public async Task<FM100.Core.GameState.GameState> StartNewGameAsync(
         string playerClubName,
         Division selectedDivision,
-        int difficulty = 5)
+        int difficulty = 5,
+        string managerName = "Manager",
+        string managerNationality = "Italian",
+        string preferredFormation = "4-3-3",
+        string managerPersonality = "Balanced")
     {
         _logger?.LogInformation("Starting new game: Club={ClubName}, Division={Division}, Difficulty={Difficulty}",
             playerClubName, selectedDivision, difficulty);
@@ -80,10 +118,21 @@ public class GameManager : IGameManager
 
             _logger?.LogInformation("Player selected club: {ClubName} (ID: {ClubId})", playerClub.Name, playerClub.Id);
 
-            var players = GeneratePlayerSquad(playerClub);
+            var players = new List<FootballPlayer>();
+            var lineups = new Dictionary<Guid, TeamLineup>();
+            foreach (var club in clubs)
+            {
+                var squad = GeneratePlayerSquad(club);
+                club.PlayerIds = squad.Select(player => player.Id).ToList();
+                players.AddRange(squad);
+                lineups[club.Id] = CreateDefaultLineup(club, squad);
+            }
+
             var transferPlayers = GenerateTransferPool(playerClub, selectedDivision);
-            playerClub.PlayerIds = players.Select(p => p.Id).ToList();
-            var playerLineup = CreateDefaultLineup(playerClub, players);
+            playerClub.Formation = string.IsNullOrWhiteSpace(preferredFormation) ? "4-3-3" : preferredFormation;
+            lineups[playerClub.Id] = CreateDefaultLineup(
+                playerClub,
+                players.Where(player => playerClub.PlayerIds.Contains(player.Id)));
 
             // Create leagues for all divisions
             var leagues = new Dictionary<Guid, League>();
@@ -113,12 +162,16 @@ public class GameManager : IGameManager
                 PlayerClubId = playerClub.Id,
                 CurrentSeason = 1,
                 CurrentLeagueId = leagues.Values.FirstOrDefault(l => l.Division == selectedDivision)?.Id,
+                Manager = new FM100.Core.GameState.ManagerProfile
+                {
+                    Name = string.IsNullOrWhiteSpace(managerName) ? "Manager" : managerName.Trim(),
+                    Nationality = string.IsNullOrWhiteSpace(managerNationality) ? "Italian" : managerNationality,
+                    PreferredFormation = playerClub.Formation,
+                    Personality = string.IsNullOrWhiteSpace(managerPersonality) ? "Balanced" : managerPersonality
+                },
                 Clubs = clubs.ToDictionary(c => c.Id),
                 Players = players.Concat(transferPlayers).ToDictionary(p => p.Id),
-                Lineups = new Dictionary<Guid, TeamLineup>
-                {
-                    [playerClub.Id] = playerLineup
-                },
+                Lineups = lineups,
                 TransferMarket = CreateTransferListings(transferPlayers, selectedDivision),
                 Leagues = leagues,
                 Fixtures = fixtures,
@@ -126,6 +179,15 @@ public class GameManager : IGameManager
                 CreatedAt = DateTime.UtcNow,
                 LastSavedAt = DateTime.UtcNow
             };
+
+            var history = _historicalWorldGenerator.Generate(gameState, years: 100);
+            _logger?.LogInformation(
+                "Generated pre-game history: Years={Years}, Tables={Tables}, Champions={Champions}, Range={Start}-{End}",
+                history.YearsGenerated,
+                history.TablesGenerated,
+                history.ChampionsGenerated,
+                history.StartYear,
+                history.EndYear);
 
             _logger?.LogInformation("Game state created successfully (SaveId: {SaveId})", gameState.SaveId);
 
@@ -349,6 +411,7 @@ public class GameManager : IGameManager
                 var gameState = await _gameSaveRepository.LoadAsync(saveId);
                 if (gameState != null)
                 {
+                    EnsureWorldSquads(gameState);
                     _logger?.LogInformation("Game loaded from database successfully");
                     return gameState;
                 }
@@ -362,6 +425,7 @@ public class GameManager : IGameManager
                 throw new InvalidOperationException($"Save not found: {saveId}");
             }
 
+            EnsureWorldSquads(inMemoryGameState);
             _logger?.LogInformation("Game loaded from memory successfully");
             return await Task.FromResult(inMemoryGameState);
         }
@@ -427,6 +491,12 @@ public class GameManager : IGameManager
 
         try
         {
+            if (gameState.IsCareerComplete)
+            {
+                await SaveGameAsync(gameState);
+                return;
+            }
+
             var currentLeague = gameState.GetCurrentLeague();
             if (currentLeague == null)
             {
@@ -434,7 +504,11 @@ public class GameManager : IGameManager
             }
 
             // Check if there are unplayed fixtures remaining
-            var unplayedFixtureCount = currentLeague.FixtureIds
+            var activeLeagues = gameState.Leagues.Values
+                .Where(league => league.Season == gameState.CurrentSeason)
+                .ToList();
+            var unplayedFixtureCount = activeLeagues
+                .SelectMany(league => league.FixtureIds)
                 .Select(fixtureId => gameState.Fixtures.TryGetValue(fixtureId, out var fixture) ? fixture : null)
                 .Count(fixture => fixture is { IsPlayed: false });
 
@@ -448,8 +522,33 @@ public class GameManager : IGameManager
                 // Season complete - advance to next
                 _logger?.LogInformation("Season {Season} complete, advancing to next season", gameState.CurrentSeason);
 
-                RecordSeasonChampion(gameState, currentLeague);
+                _leagueTableArchiveService.ArchiveCurrentSeason(gameState);
+                foreach (var league in activeLeagues)
+                {
+                    RecordSeasonChampion(gameState, league);
+                    _seasonAwardService.RecordSeasonAwards(gameState, league);
+                }
+
+                UpdateManagerRecord(gameState, activeLeagues);
+
+                _individualRecordService.UpdateSeasonRecords(gameState);
+                _playerDevelopmentService.ApplySeasonDevelopment(gameState);
+                _seasonFinanceService.ApplySeasonSettlement(gameState);
+                _staffLifecycleService.ApplySeasonReview(gameState);
+                _contractLifecycleService.ResolveExpiredContracts(gameState);
+                _aiTransferService.RunSeasonMarket(gameState);
+                _squadLifecycleService.ApplySeasonRollover(gameState);
                 ApplyPromotionAndRelegation(gameState);
+                _achievementService.Evaluate(gameState);
+
+                if (gameState.CurrentSeason >= MaximumCareerSeasons)
+                {
+                    gameState.IsCareerComplete = true;
+                    await SaveGameAsync(gameState);
+                    _logger?.LogInformation("Career completed after {SeasonCount} seasons", MaximumCareerSeasons);
+                    return;
+                }
+
                 gameState.CurrentSeason++;
                 gameState.DaysElapsed += 365;
                 var nextCurrentDivision = gameState.GetPlayerClub()?.Division ?? currentLeague.Division;
@@ -467,6 +566,41 @@ public class GameManager : IGameManager
         {
             _logger?.LogError(ex, "Failed to progress season");
             throw;
+        }
+    }
+
+    private static void EnsureWorldSquads(FM100.Core.GameState.GameState gameState)
+    {
+        foreach (var club in gameState.Clubs.Values)
+        {
+            var squad = club.PlayerIds
+                .Distinct()
+                .Select(playerId => gameState.Players.GetValueOrDefault(playerId))
+                .Where(player => player != null)
+                .Select(player => player!)
+                .Take(23)
+                .ToList();
+
+            if (squad.Count < 23)
+            {
+                var generated = GeneratePlayerSquad(club).Take(23 - squad.Count).ToList();
+                var usedShirtNumbers = squad.Select(player => player.ShirtNumber).ToHashSet();
+                foreach (var player in generated)
+                {
+                    player.ShirtNumber = Enumerable.Range(1, 99).First(number => !usedShirtNumbers.Contains(number));
+                    usedShirtNumbers.Add(player.ShirtNumber);
+                    player.ContractExpiresSeason = Math.Max(player.ContractExpiresSeason, gameState.CurrentSeason + 2);
+                    gameState.Players[player.Id] = player;
+                    squad.Add(player);
+                }
+            }
+
+            club.PlayerIds = squad.Select(player => player.Id).ToList();
+            if (!gameState.Lineups.TryGetValue(club.Id, out var lineup) ||
+                lineup.StartingPlayerIds.Count == 0)
+            {
+                gameState.Lineups[club.Id] = CreateDefaultLineup(club, squad);
+            }
         }
     }
 
@@ -514,8 +648,48 @@ public class GameManager : IGameManager
         }
 
         champion.TitlesWon++;
+        currentLeague.ChampionClubId = champion.Id;
+        currentLeague.IsComplete = true;
+        currentLeague.UpdatedAt = DateTime.UtcNow;
         gameState.HallOfFame.TitlesByClub[champion.Id] =
             gameState.HallOfFame.TitlesByClub.GetValueOrDefault(champion.Id) + 1;
+    }
+
+    private static void UpdateManagerRecord(
+        FM100.Core.GameState.GameState gameState,
+        IReadOnlyCollection<League> activeLeagues)
+    {
+        var playerClub = gameState.GetPlayerClub();
+        if (playerClub == null)
+        {
+            return;
+        }
+
+        var managerName = string.IsNullOrWhiteSpace(gameState.Manager.Name) ? "Manager" : gameState.Manager.Name;
+        var record = gameState.HallOfFame.TopManagers.FirstOrDefault(item =>
+            item.ManagerName == managerName && item.ClubId == playerClub.Id);
+        if (record == null)
+        {
+            record = new ManagerRecord { ManagerName = managerName, ClubId = playerClub.Id };
+            gameState.HallOfFame.TopManagers.Add(record);
+        }
+
+        record.Seasons++;
+        record.MatchesPlayed += playerClub.GetMatchesPlayed();
+        record.MatchesWon += playerClub.SeasonWins;
+        if (activeLeagues.Any(league => league.ChampionClubId == playerClub.Id))
+        {
+            record.Titles++;
+        }
+
+        record.WinPercentage = record.MatchesPlayed == 0
+            ? 0
+            : Math.Round(record.MatchesWon * 100d / record.MatchesPlayed, 1);
+        gameState.HallOfFame.TopManagers = gameState.HallOfFame.TopManagers
+            .OrderByDescending(item => item.Titles)
+            .ThenByDescending(item => item.MatchesWon)
+            .ThenByDescending(item => item.WinPercentage)
+            .ToList();
     }
 
     private static void ApplyPromotionAndRelegation(FM100.Core.GameState.GameState gameState)
@@ -579,6 +753,7 @@ public class GameManager : IGameManager
         foreach (var player in gameState.Players.Values)
         {
             player.PlayedMinutes = 0;
+            player.SeasonStats = new PlayerSeasonStats();
             player.InjuryDaysRemaining = Math.Max(0, player.InjuryDaysRemaining - 30);
             if (player.InjuryDaysRemaining == 0)
             {
@@ -612,13 +787,31 @@ public class GameManager : IGameManager
             return;
         }
 
+        var rosteredPlayerIds = gameState.Clubs.Values
+            .SelectMany(club => club.PlayerIds)
+            .ToHashSet();
+        var obsoleteMarketPlayerIds = gameState.TransferMarket
+            .Where(listing => !listing.IsFreeAgent && !rosteredPlayerIds.Contains(listing.PlayerId))
+            .Select(listing => listing.PlayerId)
+            .ToList();
+        foreach (var playerId in obsoleteMarketPlayerIds)
+        {
+            gameState.Players.Remove(playerId);
+            gameState.ScoutingAssignments.Remove(playerId);
+        }
+
+        var freeAgentListings = gameState.TransferMarket
+            .Where(listing => listing.IsFreeAgent && gameState.Players.ContainsKey(listing.PlayerId))
+            .ToList();
         var transferPlayers = GenerateTransferPool(playerClub, currentDivision);
         foreach (var player in transferPlayers)
         {
             gameState.Players[player.Id] = player;
         }
 
-        gameState.TransferMarket = CreateTransferListings(transferPlayers, currentDivision);
+        gameState.TransferMarket = freeAgentListings
+            .Concat(CreateTransferListings(transferPlayers, currentDivision))
+            .ToList();
     }
 
     /// <summary>

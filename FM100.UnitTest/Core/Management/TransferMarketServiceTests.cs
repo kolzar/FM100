@@ -62,6 +62,209 @@ public class TransferMarketServiceTests
         Assert.Single(gameState.TransferMarket);
     }
 
+    [Fact]
+    public void MakeOffer_WhenCloseEnough_AcceptsAndSignsForOfferedFee()
+    {
+        // Arrange
+        var service = new TransferMarketService();
+        var club = CreateClub(budget: 20);
+        var player = CreatePlayer();
+        player.Reputation = 12;
+        var listing = new TransferListing
+        {
+            PlayerId = player.Id,
+            AskingPriceInMillions = 8,
+            WageDemandInMillions = 2,
+            ContractYears = 3
+        };
+        var gameState = CreateGameState(club, player, listing);
+
+        // Act
+        var result = service.MakeOffer(gameState, listing.Id, offerInMillions: 6);
+
+        // Assert
+        Assert.True(result.Success);
+        Assert.True(result.Accepted);
+        Assert.Equal(14, club.BudgetInMillions);
+        Assert.Contains(player.Id, club.PlayerIds);
+        Assert.Empty(gameState.TransferMarket);
+    }
+
+    [Fact]
+    public void MakeOffer_WhenNearAskingPrice_CountersAndLowersListingPrice()
+    {
+        // Arrange
+        var service = new TransferMarketService();
+        var club = CreateClub(budget: 20);
+        var player = CreatePlayer();
+        player.Reputation = 15;
+        var listing = new TransferListing
+        {
+            PlayerId = player.Id,
+            AskingPriceInMillions = 10,
+            WageDemandInMillions = 3
+        };
+        var gameState = CreateGameState(club, player, listing);
+
+        // Act
+        var result = service.MakeOffer(gameState, listing.Id, offerInMillions: 7);
+
+        // Assert
+        Assert.False(result.Success);
+        Assert.True(result.Countered);
+        Assert.Equal(9, result.CounterOfferInMillions);
+        Assert.Equal(9, listing.AskingPriceInMillions);
+        Assert.DoesNotContain(player.Id, club.PlayerIds);
+        Assert.Single(gameState.TransferMarket);
+    }
+
+    [Fact]
+    public void MakeOffer_WhenTooLow_RejectsWithoutChangingListingPrice()
+    {
+        // Arrange
+        var service = new TransferMarketService();
+        var club = CreateClub(budget: 20);
+        var player = CreatePlayer();
+        var listing = new TransferListing
+        {
+            PlayerId = player.Id,
+            AskingPriceInMillions = 12,
+            WageDemandInMillions = 3
+        };
+        var gameState = CreateGameState(club, player, listing);
+
+        // Act
+        var result = service.MakeOffer(gameState, listing.Id, offerInMillions: 4);
+
+        // Assert
+        Assert.False(result.Success);
+        Assert.False(result.Countered);
+        Assert.Equal(12, listing.AskingPriceInMillions);
+        Assert.DoesNotContain(player.Id, club.PlayerIds);
+        Assert.Single(gameState.TransferMarket);
+    }
+
+    [Fact]
+    public void GetOfferOptions_ReturnsOrderedLowFairAndAskingOffers()
+    {
+        // Arrange
+        var service = new TransferMarketService();
+        var club = CreateClub(budget: 20);
+        var player = CreatePlayer();
+        player.Reputation = 12;
+        var listing = new TransferListing
+        {
+            PlayerId = player.Id,
+            AskingPriceInMillions = 10,
+            WageDemandInMillions = 2
+        };
+        var gameState = CreateGameState(club, player, listing);
+
+        // Act
+        var options = service.GetOfferOptions(gameState, listing.Id);
+
+        // Assert
+        Assert.Collection(
+            options,
+            option =>
+            {
+                Assert.Equal("Low", option.Key);
+                Assert.Equal(6, option.AmountInMillions);
+                Assert.False(option.IsLikelyAccepted);
+            },
+            option =>
+            {
+                Assert.Equal("Fair", option.Key);
+                Assert.Equal(8, option.AmountInMillions);
+                Assert.True(option.IsLikelyAccepted);
+            },
+            option =>
+            {
+                Assert.Equal("Ask", option.Key);
+                Assert.Equal(10, option.AmountInMillions);
+                Assert.True(option.IsLikelyAccepted);
+            });
+    }
+
+    [Fact]
+    public void GetOfferOptions_WhenValuesOverlap_RemovesDuplicateAmounts()
+    {
+        // Arrange
+        var service = new TransferMarketService();
+        var club = CreateClub(budget: 20);
+        var player = CreatePlayer();
+        player.Reputation = 18;
+        var listing = new TransferListing
+        {
+            PlayerId = player.Id,
+            AskingPriceInMillions = 2,
+            WageDemandInMillions = 1
+        };
+        var gameState = CreateGameState(club, player, listing);
+
+        // Act
+        var options = service.GetOfferOptions(gameState, listing.Id);
+
+        // Assert
+        Assert.Equal([1, 2], options.Select(option => option.AmountInMillions).ToList());
+    }
+
+    [Fact]
+    public void GetCandidates_IncludesScoutReportBasedOnScoutQuality()
+    {
+        // Arrange
+        var service = new TransferMarketService();
+        var club = CreateClub(budget: 20);
+        var player = CreatePlayer();
+        player.Age = 21;
+        player.Reputation = 10;
+        player.Potential = 16;
+        player.MarketValue = 8;
+        var listing = new TransferListing
+        {
+            PlayerId = player.Id,
+            AskingPriceInMillions = 9,
+            WageDemandInMillions = 2
+        };
+        var gameState = CreateGameState(club, player, listing);
+        gameState.Staff.ScoutQuality = 16;
+
+        // Act
+        var candidate = Assert.Single(service.GetCandidates(gameState));
+
+        // Assert
+        Assert.Equal(80, candidate.ScoutAccuracy);
+        Assert.Equal("Upside", candidate.RiskLabel);
+        Assert.Contains("High ceiling", candidate.ScoutSummary);
+        Assert.True(candidate.EstimatedValueInMillions > 0);
+        Assert.Contains("-", candidate.ReputationDisplay);
+        Assert.Contains("-", candidate.PotentialDisplay);
+        Assert.True(candidate.CanScout);
+    }
+
+    [Fact]
+    public void GetCandidates_WithStrongScout_TreatsNearBudgetPlayerAsAffordable()
+    {
+        // Arrange
+        var service = new TransferMarketService();
+        var club = CreateClub(budget: 9);
+        var player = CreatePlayer();
+        var listing = new TransferListing
+        {
+            PlayerId = player.Id,
+            AskingPriceInMillions = 10,
+            WageDemandInMillions = 2
+        };
+        var gameState = CreateGameState(club, player, listing);
+        gameState.Staff.ScoutQuality = 15;
+
+        // Act
+        var candidate = Assert.Single(service.GetCandidates(gameState));
+
+        // Assert
+        Assert.True(candidate.IsAffordable);
+    }
+
     private static GameState CreateGameState(Club club, FootballPlayer player, TransferListing listing)
     {
         return new GameState

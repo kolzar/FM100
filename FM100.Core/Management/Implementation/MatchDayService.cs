@@ -6,6 +6,13 @@ namespace FM100.Core.Management.Implementation;
 
 public class MatchDayService : IMatchDayService
 {
+    private readonly IInjuryService _injuryService;
+
+    public MatchDayService(IInjuryService? injuryService = null)
+    {
+        _injuryService = injuryService ?? new InjuryService();
+    }
+
     public int CalculateMatchPerformance(Club club, GameState.GameState gameState)
     {
         var formBonus = club.GetPoints() switch
@@ -21,10 +28,8 @@ public class MatchDayService : IMatchDayService
             return Math.Clamp(club.Reputation + formBonus, 8, 20);
         }
 
-        var starters = lineup.StartingPlayerIds
-            .Select(id => gameState.Players.TryGetValue(id, out var player) ? player : null)
-            .Where(player => player is { IsInjured: false })
-            .Select(player => player!)
+        var starters = GetAvailablePlayerIds(club, gameState)
+            .Select(id => gameState.Players[id])
             .ToList();
 
         if (starters.Count == 0)
@@ -45,13 +50,32 @@ public class MatchDayService : IMatchDayService
         return Math.Clamp(squadPerformance + formBonus + moraleBonus + motivationBonus + tacticalModifier - fatiguePenalty, 8, 20);
     }
 
-    public void ApplyPlayerMatchEffects(GameState.GameState gameState, Match match, Club homeClub, Club awayClub)
+    public IReadOnlyList<Guid> GetAvailablePlayerIds(Club club, GameState.GameState gameState, int take = 11)
     {
-        ApplyClubPlayerMatchEffects(gameState, homeClub, match.HomeGoals.CompareTo(match.AwayGoals));
-        ApplyClubPlayerMatchEffects(gameState, awayClub, match.AwayGoals.CompareTo(match.HomeGoals));
+        if (!gameState.Lineups.TryGetValue(club.Id, out var lineup))
+        {
+            return [];
+        }
+
+        return lineup.StartingPlayerIds
+            .Concat(lineup.SubstitutePlayerIds)
+            .Distinct()
+            .Where(playerId => gameState.Players.TryGetValue(playerId, out var player) && !player.IsInjured)
+            .Take(Math.Clamp(take, 0, 11))
+            .ToList();
     }
 
-    private static void ApplyClubPlayerMatchEffects(GameState.GameState gameState, Club club, int resultComparison)
+    public void ApplyPlayerMatchEffects(GameState.GameState gameState, Match match, Club homeClub, Club awayClub)
+    {
+        ApplyClubPlayerMatchEffects(gameState, match, homeClub, match.HomeGoals.CompareTo(match.AwayGoals));
+        ApplyClubPlayerMatchEffects(gameState, match, awayClub, match.AwayGoals.CompareTo(match.HomeGoals));
+    }
+
+    private void ApplyClubPlayerMatchEffects(
+        GameState.GameState gameState,
+        Match match,
+        Club club,
+        int resultComparison)
     {
         if (!gameState.Lineups.TryGetValue(club.Id, out var lineup))
         {
@@ -65,7 +89,8 @@ public class MatchDayService : IMatchDayService
             _ => 0
         };
 
-        foreach (var playerId in lineup.StartingPlayerIds)
+        var participants = GetAvailablePlayerIds(club, gameState).ToHashSet();
+        foreach (var playerId in participants)
         {
             if (!gameState.Players.TryGetValue(playerId, out var player))
             {
@@ -73,15 +98,17 @@ public class MatchDayService : IMatchDayService
             }
 
             player.PlayedMinutes += 90;
+            player.SeasonStats.Appearances++;
+            player.SeasonStats.MinutesPlayed += 90;
             player.CurrentState.Fatigue = Math.Clamp(player.CurrentState.Fatigue + 2 + CalculateTacticalFatigueDelta(lineup), 1, 20);
             player.CurrentState.Morale = Math.Clamp(player.CurrentState.Morale + moraleDelta, 1, 20);
             player.CurrentState.Happiness = Math.Clamp(player.CurrentState.Happiness + Math.Sign(moraleDelta), 1, 20);
             player.CurrentState.Confidence = Math.Clamp(player.CurrentState.Confidence + moraleDelta, 1, 20);
-            ApplyFatigueInjuryRisk(player);
+            _injuryService.EvaluateMatchInjury(gameState, club, player, match);
             player.CurrentState.LastUpdated = DateTime.UtcNow;
         }
 
-        foreach (var playerId in lineup.SubstitutePlayerIds)
+        foreach (var playerId in lineup.StartingPlayerIds.Concat(lineup.SubstitutePlayerIds).Distinct().Where(id => !participants.Contains(id)))
         {
             if (!gameState.Players.TryGetValue(playerId, out var player))
             {
@@ -91,17 +118,6 @@ public class MatchDayService : IMatchDayService
             player.CurrentState.Fatigue = Math.Clamp(player.CurrentState.Fatigue - 1, 1, 20);
             player.CurrentState.LastUpdated = DateTime.UtcNow;
         }
-    }
-
-    private static void ApplyFatigueInjuryRisk(FootballPlayer player)
-    {
-        if (player.IsInjured || player.CurrentState.Fatigue < 16)
-        {
-            return;
-        }
-
-        player.InjuryDaysRemaining = 7;
-        player.InjuryDescription = "Fatigue strain";
     }
 
     private static int CalculateTacticalModifier(TeamLineup lineup, IReadOnlyCollection<FootballPlayer> starters)

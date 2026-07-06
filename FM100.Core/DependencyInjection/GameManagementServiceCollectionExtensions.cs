@@ -24,7 +24,9 @@ public static class GameManagementServiceCollectionExtensions
         // Register managers
         services.AddSingleton<ILeagueManager, LeagueManager>();
         services.AddSingleton<IMatchSimulator, MatchSimulator>();
+        services.AddSingleton<IInjuryService, InjuryService>();
         services.AddSingleton<IMatchDayService, MatchDayService>();
+        services.AddSingleton<ICompetitionSimulationService, CompetitionSimulationService>();
         services.AddSingleton<ISeasonReportService, SeasonReportService>();
         services.AddSingleton<ITransferMarketService, TransferMarketService>();
         services.AddSingleton<IContractService, ContractService>();
@@ -32,6 +34,23 @@ public static class GameManagementServiceCollectionExtensions
         services.AddSingleton<IMediaEventService, MediaEventService>();
         services.AddSingleton<IGameProgressionService, GameProgressionService>();
         services.AddSingleton<IHistoryService, HistoryService>();
+        services.AddSingleton<ISeasonAwardService, SeasonAwardService>();
+        services.AddSingleton<IPlayerDevelopmentService, PlayerDevelopmentService>();
+        services.AddSingleton<ISquadLifecycleService, SquadLifecycleService>();
+        services.AddSingleton<IAiTransferService, AiTransferService>();
+        services.AddSingleton<IContractLifecycleService, ContractLifecycleService>();
+        services.AddSingleton<ISeasonFinanceService, SeasonFinanceService>();
+        services.AddSingleton<IIndividualRecordService, IndividualRecordService>();
+        services.AddSingleton<ILeagueTableArchiveService, LeagueTableArchiveService>();
+        services.AddSingleton<IAchievementService, AchievementService>();
+        services.AddSingleton<ITacticalPlanningService, TacticalPlanningService>();
+        services.AddSingleton<IScoutingService, ScoutingService>();
+        services.AddSingleton<IStaffLifecycleService, StaffLifecycleService>();
+        services.AddSingleton<ITrainingService, TrainingService>();
+        services.AddSingleton<IStaffService, StaffService>();
+        services.AddSingleton<IFinanceService, FinanceService>();
+        services.AddSingleton<IPlayerPerformanceService, PlayerPerformanceService>();
+        services.AddSingleton<IHistoricalWorldGenerator, HistoricalWorldGenerator>();
 
         // Register GameManager with optional IGameSaveRepository for persistence
         services.AddSingleton<IGameManager>(sp =>
@@ -39,11 +58,37 @@ public static class GameManagementServiceCollectionExtensions
             var leagueManager = sp.GetRequiredService<ILeagueManager>();
             var clubGenerator = sp.GetRequiredService<ClubGenerator>();
             var clubRepository = sp.GetRequiredService<IClubRepository>();
+            var seasonAwardService = sp.GetRequiredService<ISeasonAwardService>();
+            var playerDevelopmentService = sp.GetRequiredService<IPlayerDevelopmentService>();
+            var squadLifecycleService = sp.GetRequiredService<ISquadLifecycleService>();
+            var aiTransferService = sp.GetRequiredService<IAiTransferService>();
+            var contractLifecycleService = sp.GetRequiredService<IContractLifecycleService>();
+            var seasonFinanceService = sp.GetRequiredService<ISeasonFinanceService>();
+            var individualRecordService = sp.GetRequiredService<IIndividualRecordService>();
+            var leagueTableArchiveService = sp.GetRequiredService<ILeagueTableArchiveService>();
+            var achievementService = sp.GetRequiredService<IAchievementService>();
+            var staffLifecycleService = sp.GetRequiredService<IStaffLifecycleService>();
+            var historicalWorldGenerator = sp.GetRequiredService<IHistoricalWorldGenerator>();
 
             // Try to resolve IGameSaveRepository if available (registered by data layer)
             var gameSaveRepository = sp.GetService<IGameSaveRepository>();
 
-            return new GameManager(leagueManager, clubGenerator, clubRepository, gameSaveRepository);
+            return new GameManager(
+                leagueManager,
+                clubGenerator,
+                clubRepository,
+                gameSaveRepository,
+                seasonAwardService,
+                playerDevelopmentService,
+                squadLifecycleService,
+                aiTransferService,
+                contractLifecycleService,
+                seasonFinanceService,
+                individualRecordService,
+                leagueTableArchiveService,
+                achievementService,
+                staffLifecycleService,
+                historicalWorldGenerator);
         });
 
         return services;

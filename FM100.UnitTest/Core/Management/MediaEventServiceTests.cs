@@ -24,6 +24,8 @@ public class MediaEventServiceTests
         Assert.NotEqual(Guid.Empty, mediaEvent.Id);
         Assert.False(mediaEvent.IsResolved);
         Assert.Single(gameState.MediaEvents);
+        Assert.Equal("ProtectSquad", mediaEvent.RecommendedResponse);
+        Assert.Equal("Managed", mediaEvent.RiskLabel);
     }
 
     [Fact]
@@ -45,6 +47,9 @@ public class MediaEventServiceTests
         Assert.Equal(11, player.CurrentState.Morale);
         Assert.Equal(11, player.CurrentState.CoachRelationship);
         Assert.Equal(9, player.CurrentState.Stress);
+        Assert.Equal(120, result.Effectiveness);
+        Assert.Equal(11, result.MediaReputation);
+        Assert.Equal(1, mediaEvent.MediaReputationAfter - mediaEvent.MediaReputationBefore);
     }
 
     [Fact]
@@ -87,15 +92,121 @@ public class MediaEventServiceTests
         Assert.Single(gameState.MediaEvents);
     }
 
+    [Fact]
+    public void GetOrCreateCurrentEvent_WithExpiringContracts_CreatesRecurringContractStoryline()
+    {
+        // Arrange
+        var service = new MediaEventService();
+        var club = CreateClub();
+        var players = Enumerable.Range(0, 3)
+            .Select(_ =>
+            {
+                var player = CreatePlayer();
+                player.ContractExpiresSeason = 2;
+                return player;
+            })
+            .ToList();
+        var gameState = CreateGameState(club, players);
+        gameState.CurrentSeason = 1;
+
+        // Act
+        var first = service.GetOrCreateCurrentEvent(gameState);
+        service.Respond(gameState, first.Id, MediaResponseStyle.ProtectSquad);
+        gameState.DaysElapsed++;
+        var second = service.GetOrCreateCurrentEvent(gameState);
+
+        // Assert
+        Assert.Equal("contract-tension", first.StorylineKey);
+        Assert.Equal(1, first.StorylineStage);
+        Assert.Equal("contract-tension", second.StorylineKey);
+        Assert.Equal(2, second.StorylineStage);
+        Assert.Contains("continues", second.Headline);
+    }
+
+    [Fact]
+    public void GetOrCreateCurrentEvent_WithMultipleInjuries_PrioritizesInjuryCrisis()
+    {
+        // Arrange
+        var service = new MediaEventService();
+        var club = CreateClub();
+        var players = Enumerable.Range(0, 3)
+            .Select(_ =>
+            {
+                var player = CreatePlayer();
+                player.InjuryDaysRemaining = 10;
+                player.ContractExpiresSeason = 2;
+                return player;
+            })
+            .ToList();
+        var gameState = CreateGameState(club, players);
+        gameState.CurrentSeason = 1;
+
+        // Act
+        var mediaEvent = service.GetOrCreateCurrentEvent(gameState);
+
+        // Assert
+        Assert.Equal("injury-crisis", mediaEvent.StorylineKey);
+        Assert.True(mediaEvent.PressureLevel >= 6);
+        var brief = service.BuildBrief(gameState, mediaEvent);
+        Assert.Equal(MediaResponseStyle.ProtectSquad, brief.RecommendedStyle);
+        Assert.Equal("Elevated", brief.Risk);
+    }
+
+    [Fact]
+    public void Respond_WithRecommendedPoorFormChallenge_UsesContextualEffectiveness()
+    {
+        var service = new MediaEventService();
+        var club = CreateClub();
+        club.SeasonLosses = 3;
+        var gameState = CreateGameState(club, CreatePlayer());
+        var mediaEvent = service.GetOrCreateCurrentEvent(gameState);
+
+        var brief = service.BuildBrief(gameState, mediaEvent);
+        var result = service.Respond(gameState, mediaEvent.Id, MediaResponseStyle.ChallengeSquad);
+
+        Assert.Equal("poor-form", mediaEvent.StorylineKey);
+        Assert.Equal(MediaResponseStyle.ChallengeSquad, brief.RecommendedStyle);
+        Assert.Equal("Elevated", brief.Risk);
+        Assert.Equal(110, result.Effectiveness);
+        Assert.Equal(11, gameState.Manager.BoardConfidence);
+    }
+
+    [Fact]
+    public void Respond_WithLowReputationAndWrongStyle_LosesReputationAndBoardConfidence()
+    {
+        var service = new MediaEventService();
+        var club = CreateClub();
+        club.SeasonWins = 3;
+        var gameState = CreateGameState(club, CreatePlayer());
+        gameState.Manager.MediaReputation = 6;
+        var mediaEvent = service.GetOrCreateCurrentEvent(gameState);
+
+        var result = service.Respond(gameState, mediaEvent.Id, MediaResponseStyle.ChallengeSquad);
+
+        Assert.Equal("momentum", mediaEvent.StorylineKey);
+        Assert.Equal(70, result.Effectiveness);
+        Assert.Equal(5, gameState.Manager.MediaReputation);
+        Assert.Equal(9, gameState.Manager.BoardConfidence);
+        Assert.Contains("declined", result.Message);
+    }
+
     private static GameState CreateGameState(Club club, FootballPlayer player)
     {
-        club.PlayerIds.Add(player.Id);
+        return CreateGameState(club, [player]);
+    }
+
+    private static GameState CreateGameState(Club club, IReadOnlyCollection<FootballPlayer> players)
+    {
+        foreach (var player in players)
+        {
+            club.PlayerIds.Add(player.Id);
+        }
 
         return new GameState
         {
             PlayerClubId = club.Id,
             Clubs = new Dictionary<Guid, Club> { [club.Id] = club },
-            Players = new Dictionary<Guid, FootballPlayer> { [player.Id] = player }
+            Players = players.ToDictionary(player => player.Id)
         };
     }
 

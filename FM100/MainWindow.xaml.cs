@@ -157,7 +157,13 @@ namespace FM100
             coachCreationView.CoachCreated += async (s, e) =>
             {
                 Logger.Information("MainWindow", $"Coach created: {e.CoachName}");
-                await StartNewGame(selectedClub, difficulty, e.CoachName, e.PreferredFormation);
+                await StartNewGame(
+                    selectedClub,
+                    difficulty,
+                    e.CoachName,
+                    e.Nationality,
+                    e.PreferredFormation,
+                    e.Personality);
             };
             coachCreationView.Cancelled += (s, e) =>
             {
@@ -167,7 +173,13 @@ namespace FM100
             ViewHost.Content = coachCreationView;
         }
 
-        private async Task StartNewGame(Club selectedClub, int difficulty, string coachName = "Manager", string preferredFormation = "4-3-3")
+        private async Task StartNewGame(
+            Club selectedClub,
+            int difficulty,
+            string coachName = "Manager",
+            string coachNationality = "Italian",
+            string preferredFormation = "4-3-3",
+            string coachPersonality = "Balanced")
         {
             try
             {
@@ -182,7 +194,14 @@ namespace FM100
 
                 // Create new game state
                 Logger.Information("MainWindow", "Creating new game state");
-                _currentGameState = await _gameManager.StartNewGameAsync(selectedClub.Name, selectedClub.Division, difficulty);
+                _currentGameState = await _gameManager.StartNewGameAsync(
+                    selectedClub.Name,
+                    selectedClub.Division,
+                    difficulty,
+                    coachName,
+                    coachNationality,
+                    preferredFormation,
+                    coachPersonality);
                 Logger.Information("MainWindow", $"New game state created successfully with coach: {coachName}, Formation: {preferredFormation}");
 
                 // Show game dashboard
@@ -219,6 +238,13 @@ namespace FM100
             var mediaEventService = app?.GetServiceProvider().GetService(typeof(IMediaEventService)) as IMediaEventService;
             var gameProgressionService = app?.GetServiceProvider().GetService(typeof(IGameProgressionService)) as IGameProgressionService;
             var historyService = app?.GetServiceProvider().GetService(typeof(IHistoryService)) as IHistoryService;
+            var trainingService = app?.GetServiceProvider().GetService(typeof(ITrainingService)) as ITrainingService;
+            var staffService = app?.GetServiceProvider().GetService(typeof(IStaffService)) as IStaffService;
+            var financeService = app?.GetServiceProvider().GetService(typeof(IFinanceService)) as IFinanceService;
+            var playerPerformanceService = app?.GetServiceProvider().GetService(typeof(IPlayerPerformanceService)) as IPlayerPerformanceService;
+            var competitionSimulationService = app?.GetServiceProvider().GetService(typeof(ICompetitionSimulationService)) as ICompetitionSimulationService;
+            var tacticalPlanningService = app?.GetServiceProvider().GetService(typeof(ITacticalPlanningService)) as ITacticalPlanningService;
+            var scoutingService = app?.GetServiceProvider().GetService(typeof(IScoutingService)) as IScoutingService;
 
             var dashboard = new GameDashboardView();
             dashboard.Initialize(
@@ -236,7 +262,14 @@ namespace FM100
                 teamTalkService,
                 mediaEventService,
                 gameProgressionService,
-                historyService);
+                historyService,
+                trainingService,
+                staffService,
+                financeService,
+                playerPerformanceService,
+                competitionSimulationService,
+                tacticalPlanningService,
+                scoutingService);
             ViewHost.Content = dashboard;
         }
 

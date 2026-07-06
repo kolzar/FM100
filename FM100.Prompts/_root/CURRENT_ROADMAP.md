@@ -3,7 +3,7 @@
 ## Current Verified State
 
 - Build: `dotnet build D:\My\github\FM100\FM100.sln` passes with 0 warnings.
-- Tests: `dotnet test D:\My\github\FM100\FM100.UnitTest\FM100.UnitTest.csproj --no-restore` passes, 72/72.
+- Tests: `dotnet test D:\My\github\FM100\FM100.UnitTest\FM100.UnitTest.csproj --no-restore` passes, 150/150.
 - NuGet vulnerability scan is clean.
 - Main flow is active: Splash -> Menu -> Club Selection -> Coach Creation -> Game Dashboard.
 - Implemented recently:
@@ -45,6 +45,58 @@
   - Promotion/relegation foundation: end-of-season progression moves bottom clubs down and top clubs up between Serie A/B/C before generating next-season fixtures.
   - Player-club season progression now follows the club's new division after promotion/relegation when selecting the next current league.
   - Multi-season history view foundation: the dashboard includes a History tab with Hall of Fame titles, media archive, and achievement archive backed by `HistoryService`.
+  - Season awards foundation: completed seasons now record champion, best attack, best defense, overachiever, and player of the season awards; the History tab exposes the award archive.
+  - Transfer negotiation foundation: the Transfers tab now supports discounted bids, accepted offers, counter-offers that lower asking prices, and rejected lowball bids.
+  - Recurring media storylines foundation: media events now track storyline type, stage, and pressure; persistent contract, injury, poor-form, or momentum stories can continue across days and appear in dashboard/history.
+  - Player development foundation: season rollover now applies reputation, potential, and market-value growth/decline from age, minutes, morale, stress, and potential ceiling; History exposes recent development records.
+  - Training focus foundation: the dashboard can set Fitness, Tactical, Recovery, or Youth training; rest-day progression applies focused effects to fatigue, stress, motivation, and confidence.
+  - Staff foundation: saves track Coach/Physio/Scout quality, dashboard can upgrade staff with budget, and staff quality modifies training recovery/youth effects plus scouting affordability.
+  - Scouting report foundation: transfer candidates now show scout summary, risk label, estimated value, and scout accuracy driven by Scout quality.
+  - Season review presentation: History now aggregates each season into a review row combining champion/awards, player development, and media counts.
+  - Matchday finance foundation: home matches now generate stadium/fan-satisfaction based revenue, update budget, and record finance history.
+  - Finance history presentation: History now shows recent finance records and season reviews include finance counts/totals.
+  - Player performance dashboard foundation: Squad now ranks top performers by score, minutes, workload, mood, and availability risk.
+  - Transfer offer options: transfer candidates now expose low/fair/asking suggested bids so negotiations have multiple player choices.
+  - Staff report foundation: dashboard staff now shows average quality, grade, strength, weakness, and recommended upgrade.
+  - Training report foundation: dashboard training now explains benefit and risk for the selected focus/intensity.
+  - Contract report foundation: Squad now summarizes urgent renewals, total signing-fee exposure, affordability, and priority player.
+  - Rich season award presentation: History classifies title, player, and club awards and orders each season by award importance.
+  - Global competition simulation: playing the next fixture now simulates the same matchweek for every club in Serie A, B, and C and updates each league independently.
+  - Multi-division standings: the Standings view can switch explicitly between complete Serie A, Serie B, and Serie C tables.
+  - 100-season career loop: all three leagues close together, all division champions are archived, the next season starts automatically, and History exposes up to 100 season reviews.
+  - Complete AI squads: every Serie A/B/C club owns a 23-player squad and lineup; all simulated matches update player minutes, fatigue, morale, and injury risk, including migrated saves.
+  - Generational squad lifecycle: players age each season, veterans retire, academy prospects replace them by position, lineups rebuild, and History archives retirement/promotion events.
+  - AI transfer market: AI clubs buy squad upgrades at season rollover, transfer fees update both budgets, squads rebalance to 23 players, and History archives each move.
+  - Global contract lifecycle: expired deals trigger sustainable AI renewals or free-agent releases, human non-renewals are enforced, free agents remain signable, and History explains every outcome.
+  - Global season finances: all clubs receive sponsorship and table prize money, pay annual wages, update budgets before market decisions, and expose comparable World Finance history.
+  - Career fast-forward: dashboard can simulate the remaining global season or up to ten seasons at once, including match effects, player-club finance, annual rollover, persistence, and the season-100 stop.
+  - Verified 100-season longevity: an end-to-end test runs all three divisions through 100 complete seasons and proves awards, finances, history, squads, lineups, terminal state, and bounded player-pool growth.
+  - Transfer-pool lifecycle cleanup: obsolete market players are removed, free agents age and retire, and long careers no longer accumulate invisible orphan players.
+  - Manager legacy: coach identity and preferences persist from creation, while seasons, matches, wins, win percentage, and titles feed the Hall of Fame.
+  - Global unbeaten records: every simulated result updates active and all-time club streaks, exposed alongside manager legacy in History.
+  - Individual season statistics: every starter accumulates appearances, minutes, goals, assists, and match ratings across global simulation.
+  - Best individual seasons: rollover preserves each player's strongest campaign and History ranks all-time records with club, season, output, rating, and appearances.
+  - Complete historical tables: every final Serie A/B/C table is snapshotted before reset with full P/W/D/L/GF/GA/GD/points data; History exposes all 300 tables across 100 seasons.
+  - Core achievement engine: achievements evaluate independently of WPF after rounds and rollovers, with deduplicated season goals plus title, academy, win, unbeaten, and 10/25/50/100-season milestones.
+  - Deep injury system: fatigue/age drive deterministic minor, moderate, or severe injuries; physio quality reduces duration and accelerates recovery; healthy bench players replace unavailable starters.
+  - Injury archive: match timelines identify injury incidents and History records severity, initial absence, club, and recovery day across the 100-season simulation.
+  - Adaptive AI tactics: every AI club chooses mentality, pressing, and tempo from relative strength, venue, form, fatigue, and tactical intelligence without overriding the human lineup.
+  - Opponent tactical preview: Next Match exposes the expected AI approach and physical-load risk before kickoff.
+  - Progressive scouting assignments: transfer targets begin with staff-dependent uncertainty, SCOUT assignments improve knowledge on rest days, and exact reputation/potential appear only at 100%.
+  - Scouting lifecycle cleanup: completed signings and players leaving the market remove stale assignments, keeping long saves bounded.
+  - Staff lifecycle: annual upkeep and triennial renewals affect the player-club budget; underfunding reduces department quality and History archives every review.
+  - All-series standings overview: Serie A, Serie B, and Serie C tables are visible together, with a selectable detailed table below.
+  - Training sessions: focus preserves a user-controlled 1-3 intensity, every rest-day session records squad-average fatigue/morale/confidence changes, and the dashboard exposes seasonal count plus recent outcomes.
+  - Performance-driven lineup: Squad labels players Start/Rotate/Rest/Unavailable and can auto-pick a role-balanced XI from form, output, mental state, fatigue, and availability without overwriting tactical instructions.
+  - Player-club career analytics: History joins all 100 final tables with seasonal finances, identifies titles/promotions/relegations, and presents career totals, best finish, movement, points, wins, goals, and net finance.
+  - Complete season reports: every club archives its best performer before stat reset; the player-club timeline combines grade, year-over-year trend, record, scoring, finances, outcome, and seasonal star across all 100 years.
+  - Dressing-room dynamics: team talks use trust, squad context, and repetition to calculate effectiveness; only one talk is allowed per day, cohesion is reported live, and History archives measured morale/motivation/trust impact.
+  - Contextual press management: storylines recommend a response with explicit risk; pressure, response fit, and manager media reputation determine effectiveness and persistent squad, fan, reputation, and board-confidence outcomes exposed in dashboard and History.
+  - Global matchday finance: every simulated Serie A/B/C home fixture generates one idempotent club-linked gate receipt in Core; player views remain filtered while 100-season world simulation verifies all revenues.
+  - Complete season-review dossiers: each of the 100 player-club seasons combines final grade/result, all three division champions, seasonal star, market, injuries, achievements, media, and filtered club finance in one readable timeline.
+  - Standings and simulation feedback refinement: Serie A/B/C overviews and detailed standings use theme-aware aligned DataGrid columns; play/season/decade simulation reports per-match percentage, round, division, latest score, goals, and 1/X/2 statistics live.
+  - 100-year Albo d'Oro: History exposes one row per season with the Serie A, Serie B, and Serie C champion, backed by final-table archives with award fallback and verified as 100 seasons / 300 champions.
+  - Pre-game 100-year world history: every new game is born with the previous 100 completed calendar seasons already generated (300 full Serie A/B/C tables, 300 champions, and historical title totals). This history is separate from manager-career statistics and does not advance or mutate playable season 1.
 
 ## Documentation Reconciliation
 
@@ -119,29 +171,33 @@ Primary goal: make the game loop feel playable beyond "simulate next match".
 - Show recent results directly on the dashboard. **Complete**
 - Keep all content responsive to full-window layout.
 
-## Phase 5B: Later
+## Phase 5B: Complete
 
 - Advanced standings with goal difference, form, goals for/against. **Complete**
-- Player performance dashboard. **Started**
-- Historical statistics. **Foundation complete**
-- Multi-season history views. **Foundation complete**
-- Season summary reports. **Foundation complete**
-- Achievements. **Foundation complete**
+- Player performance dashboard. **Output scoring, workload/risk recommendations, and role-aware auto-pick XI complete**
+- Player development. **Generational lifecycle and history presentation complete**
+- Training focus. **Focus, intensity, staff effects, session outcomes, and dashboard history complete**
+- Staff systems. **Upgrade, gameplay effects, annual contract, cost, and history flow complete**
+- Scouting reports. **Progressive knowledge, assignment, reveal, and cleanup flow complete**
+- Matchday finance. **Complete globally for every simulated home club with idempotent club-linked history**
+- Finance history. **Global season settlement presentation complete**
+- Historical statistics. **Complete pre-game 100-year world archive plus player-club career trend, records, movement, and financial analytics**
+- Multi-season history views. **Complete table, award, finance, transfer, contract, manager, and player archives**
+- 100-season career timeline and terminal season. **Complete: 100 pre-game historical years plus a separate playable 100-season manager career**
+- Season summary reports. **Complete 100-season club reports with grade, trend, outcome, finance, and best performer**
+- Season awards. **Rich presentation complete**
+- Season review presentation. **Complete 100-season dossiers with club, world, player, market, medical, achievement, media, and finance context**
+- Achievements. **Core career milestone system complete**
 
-## Phase 5C: Later
+## Phase 5C: Complete
 
-- Transfer market. **Foundation complete**
-- Contracts. **Renewal foundation complete**
-- Injuries. **Foundation complete**
-- Morale/motivation as gameplay systems. **Foundation complete**
-- Tactical depth. **Foundation complete**
-- Press/media events. **Foundation complete**
+- Transfer market. **Player negotiation and AI market history complete**
+- Contracts. **Global renewal, expiry, free-agent, and history flow complete**
+- Injuries. **Global severity, physio recovery, replacement, and history flow complete**
+- Morale/motivation as gameplay systems. **Contextual team talks, trust, cohesion, repetition, cooldown, match effects, and history complete**
+- Tactical depth. **Human instructions, adaptive AI planning, match effects, and opponent preview complete**
+- Press/media events. **Recurring contextual storylines, risk briefing, reputation, board confidence, scaled outcomes, and history complete**
 
 ## Recommended Immediate Next Task
 
-Continue `5B/5C` feature work.
-
-Reason:
-
-- Phase 5A is complete and verified.
-- Continue expanding 5B/5C: deeper transfer negotiations, recurring media storylines, richer season awards, and multi-season history views.
+Phase 5B/5C implementation is complete. Begin a stabilization phase focused on persistence integration tests, save migration coverage, UI visual QA, and packaging/release readiness.

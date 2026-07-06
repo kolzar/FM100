@@ -9,5 +9,11 @@ public sealed class PlayerSeasonStats
     public int SecondYellowRedCards { get; set; }
     public int RedCards { get; set; }
     public int MinutesPlayed { get; set; }
+    public int RatedMatches { get; set; }
+    public int TotalRatingPoints { get; set; }
+
+    public int GetAverageRating() => RatedMatches == 0
+        ? 0
+        : (int)Math.Round(TotalRatingPoints / (double)RatedMatches);
 }
 

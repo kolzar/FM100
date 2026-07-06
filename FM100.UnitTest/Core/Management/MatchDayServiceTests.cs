@@ -1,4 +1,5 @@
 using FM100.Core.GameState;
+using FM100.Core.Management;
 using FM100.Core.Management.Implementation;
 using FM100.Domain.Base.Attribute;
 using FM100.Domain.Club;
@@ -29,7 +30,7 @@ public class MatchDayServiceTests
     public void ApplyPlayerMatchEffects_WhenClubWins_IncreasesStarterMoraleAndFatigue()
     {
         // Arrange
-        var service = new MatchDayService();
+        var service = new MatchDayService(new NoInjuryService());
         var homeClub = CreateClub("Home", reputation: 12);
         var awayClub = CreateClub("Away", reputation: 12);
         var gameState = CreateGameState(homeClub, starterReputation: 12, starterMorale: 10, starterFatigue: 4);
@@ -62,7 +63,7 @@ public class MatchDayServiceTests
     public void ApplyPlayerMatchEffects_WhenClubLoses_DecreasesStarterMorale()
     {
         // Arrange
-        var service = new MatchDayService();
+        var service = new MatchDayService(new NoInjuryService());
         var homeClub = CreateClub("Home", reputation: 12);
         var awayClub = CreateClub("Away", reputation: 12);
         var gameState = CreateGameState(homeClub, starterReputation: 12, starterMorale: 10, starterFatigue: 4);
@@ -92,7 +93,7 @@ public class MatchDayServiceTests
         var service = new MatchDayService();
         var homeClub = CreateClub("Home", reputation: 12);
         var awayClub = CreateClub("Away", reputation: 12);
-        var gameState = CreateGameState(homeClub, starterReputation: 12, starterMorale: 10, starterFatigue: 15);
+        var gameState = CreateGameState(homeClub, starterReputation: 12, starterMorale: 10, starterFatigue: 18);
         AddLineup(gameState, awayClub, starterReputation: 12, starterMorale: 10, starterFatigue: 4);
         var homeStarterId = gameState.Lineups[homeClub.Id].StartingPlayerIds[0];
 
@@ -111,8 +112,12 @@ public class MatchDayServiceTests
         // Assert
         var starter = gameState.Players[homeStarterId];
         Assert.True(starter.IsInjured);
-        Assert.Equal(7, starter.InjuryDaysRemaining);
-        Assert.Equal("Fatigue strain", starter.InjuryDescription);
+        Assert.Equal(28, starter.InjuryDaysRemaining);
+        Assert.Equal("Hamstring injury", starter.InjuryDescription);
+        Assert.Contains(gameState.InjuryHistory, record =>
+            record.PlayerId == starter.Id && record.Severity == "Severe" && record.InitialDays == 28);
+        Assert.Contains(match.Events, matchEvent =>
+            matchEvent.EventType == MatchEventType.InjuryIncident && matchEvent.Description.Contains(starter.FirstName));
     }
 
     [Fact]
@@ -134,6 +139,35 @@ public class MatchDayServiceTests
 
         // Assert
         Assert.Equal(club.Reputation, performance);
+    }
+
+    [Fact]
+    public void ApplyPlayerMatchEffects_ReplacesInjuredStarterWithHealthyBenchPlayer()
+    {
+        var service = new MatchDayService();
+        var homeClub = CreateClub("Home", reputation: 12);
+        var awayClub = CreateClub("Away", reputation: 12);
+        var gameState = CreateGameState(homeClub, starterReputation: 12, starterMorale: 10, starterFatigue: 4);
+        AddLineup(gameState, awayClub, starterReputation: 12, starterMorale: 10, starterFatigue: 4);
+        var injuredStarterId = gameState.Lineups[homeClub.Id].StartingPlayerIds[0];
+        var replacementId = gameState.Lineups[homeClub.Id].SubstitutePlayerIds[0];
+        gameState.Players[injuredStarterId].InjuryDaysRemaining = 10;
+        gameState.Players[injuredStarterId].InjuryDescription = "Muscle strain";
+        var match = new Match
+        {
+            Id = Guid.NewGuid(),
+            HomeClubId = homeClub.Id,
+            AwayClubId = awayClub.Id,
+            HomeGoals = 1,
+            AwayGoals = 0
+        };
+
+        service.ApplyPlayerMatchEffects(gameState, match, homeClub, awayClub);
+
+        Assert.Equal(0, gameState.Players[injuredStarterId].PlayedMinutes);
+        Assert.Equal(90, gameState.Players[replacementId].PlayedMinutes);
+        Assert.Equal(0, gameState.Players[injuredStarterId].SeasonStats.Appearances);
+        Assert.Equal(1, gameState.Players[replacementId].SeasonStats.Appearances);
     }
 
     [Fact]
@@ -185,7 +219,7 @@ public class MatchDayServiceTests
     public void ApplyPlayerMatchEffects_WithHighPressAndFastTempo_IncreasesStarterFatigueMore()
     {
         // Arrange
-        var service = new MatchDayService();
+        var service = new MatchDayService(new NoInjuryService());
         var homeClub = CreateClub("Home", reputation: 12);
         var awayClub = CreateClub("Away", reputation: 12);
         var gameState = CreateGameState(homeClub, starterReputation: 12, starterMorale: 10, starterFatigue: 4);
@@ -279,5 +313,13 @@ public class MatchDayServiceTests
                 Fatigue = fatigue
             }
         };
+    }
+    private sealed class NoInjuryService : IInjuryService
+    {
+        public InjuryOutcome? EvaluateMatchInjury(
+            GameState gameState,
+            Club club,
+            FootballPlayer player,
+            Match match) => null;
     }
 }

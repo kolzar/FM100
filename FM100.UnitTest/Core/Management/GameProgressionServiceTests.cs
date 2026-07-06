@@ -113,6 +113,134 @@ public class GameProgressionServiceTests
         Assert.Equal(8, player.CurrentState.CoachRelationship);
     }
 
+    [Fact]
+    public void AdvanceDays_WithRecoveryTraining_ReducesFatigueMore()
+    {
+        // Arrange
+        var service = new GameProgressionService();
+        var player = CreatePlayer();
+        player.CurrentState.Fatigue = 10;
+        player.CurrentState.Stress = 8;
+        var gameState = CreateGameState(player);
+        gameState.Training.Focus = TrainingFocus.Recovery;
+        gameState.Training.Intensity = 2;
+
+        // Act
+        service.AdvanceDays(gameState);
+
+        // Assert
+        Assert.Equal(7, player.CurrentState.Fatigue);
+        Assert.Equal(6, player.CurrentState.Stress);
+    }
+
+    [Fact]
+    public void AdvanceDays_WithYouthTraining_ImprovesYoungPlayerMotivation()
+    {
+        // Arrange
+        var service = new GameProgressionService();
+        var player = CreatePlayer();
+        player.Age = 21;
+        var gameState = CreateGameState(player);
+        gameState.Training.Focus = TrainingFocus.Youth;
+        gameState.Training.Intensity = 2;
+
+        // Act
+        service.AdvanceDays(gameState);
+
+        // Assert
+        Assert.Equal(11, player.CurrentState.Motivation);
+        Assert.Equal(11, player.CurrentState.Confidence);
+    }
+
+    [Fact]
+    public void AdvanceDays_WithHighQualityCoach_BoostsYouthTraining()
+    {
+        // Arrange
+        var service = new GameProgressionService();
+        var player = CreatePlayer();
+        player.Age = 21;
+        var gameState = CreateGameState(player);
+        gameState.Training.Focus = TrainingFocus.Youth;
+        gameState.Training.Intensity = 2;
+        gameState.Staff.CoachQuality = 15;
+
+        // Act
+        service.AdvanceDays(gameState);
+
+        // Assert
+        Assert.Equal(12, player.CurrentState.Motivation);
+    }
+
+    [Fact]
+    public void AdvanceDays_WithHighQualityPhysio_BoostsRecoveryTraining()
+    {
+        // Arrange
+        var service = new GameProgressionService();
+        var player = CreatePlayer();
+        player.CurrentState.Fatigue = 10;
+        var gameState = CreateGameState(player);
+        gameState.Training.Focus = TrainingFocus.Recovery;
+        gameState.Training.Intensity = 2;
+        gameState.Staff.PhysioQuality = 15;
+
+        // Act
+        service.AdvanceDays(gameState);
+
+        // Assert
+        Assert.Equal(6, player.CurrentState.Fatigue);
+    }
+
+    [Fact]
+    public void AdvanceDays_WithHighQualityPhysio_AcceleratesInjuryRecoveryAndClosesHistory()
+    {
+        var service = new GameProgressionService();
+        var player = CreatePlayer();
+        player.InjuryDaysRemaining = 6;
+        player.InjuryDescription = "Muscle strain";
+        var gameState = CreateGameState(player);
+        gameState.Staff.PhysioQuality = 18;
+        gameState.InjuryHistory.Add(new InjuryHistoryRecord
+        {
+            PlayerId = player.Id,
+            InjuryType = "Muscle strain",
+            InitialDays = 6
+        });
+
+        service.AdvanceDays(gameState, days: 2);
+
+        Assert.False(player.IsInjured);
+        Assert.Equal(string.Empty, player.InjuryDescription);
+        Assert.Equal(2, gameState.InjuryHistory[0].RecoveredAtDay);
+    }
+
+    [Fact]
+    public void AdvanceDays_RecordsTrainingSessionWithBeforeAndAfterAverages()
+    {
+        var service = new GameProgressionService();
+        var player = CreatePlayer();
+        player.CurrentState.Fatigue = 10;
+        player.CurrentState.Morale = 10;
+        player.ContractExpiresSeason = 10;
+        var gameState = CreateGameState(player);
+        gameState.CurrentSeason = 4;
+        gameState.DaysElapsed = 12;
+        gameState.Training.Focus = TrainingFocus.Recovery;
+        gameState.Training.Intensity = 2;
+
+        service.AdvanceDays(gameState);
+
+        var record = Assert.Single(gameState.TrainingHistory);
+        Assert.Equal(4, record.Season);
+        Assert.Equal(13, record.Day);
+        Assert.Equal(TrainingFocus.Recovery, record.Focus);
+        Assert.Equal(2, record.Intensity);
+        Assert.Equal(1, record.PlayersAffected);
+        Assert.Equal(10, record.AverageFatigueBefore);
+        Assert.Equal(7, record.AverageFatigueAfter);
+        Assert.Equal(11, record.AverageMoraleAfter);
+        Assert.Contains("fatigue 10.0->7.0", record.Summary);
+    }
+
     private static GameState CreateGameState(FootballPlayer player)
     {
         var club = new Club

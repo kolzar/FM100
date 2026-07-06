@@ -80,4 +80,9 @@ public class FootballPlayer : Person
     /// Used to calculate fatigue impact on performance.
     /// </summary>
     public int PlayedMinutes { get; set; }
+
+    /// <summary>
+    /// Individual statistics accumulated in the active season.
+    /// </summary>
+    public PlayerSeasonStats SeasonStats { get; set; } = new();
 }

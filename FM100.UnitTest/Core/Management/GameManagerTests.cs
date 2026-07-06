@@ -16,7 +16,13 @@ public class GameManagerTests
         var manager = new GameManager(new LeagueManager(), new ClubGenerator(), clubRepository);
 
         // Act
-        var gameState = await manager.StartNewGameAsync("Real Madrid", Division.SerieA);
+        var gameState = await manager.StartNewGameAsync(
+            "Real Madrid",
+            Division.SerieA,
+            managerName: "Ada Coach",
+            managerNationality: "Italian",
+            preferredFormation: "3-5-2",
+            managerPersonality: "Analytical");
         var playerClub = gameState.GetPlayerClub();
 
         // Assert
@@ -37,6 +43,62 @@ public class GameManagerTests
         Assert.Empty(lineup.StartingPlayerIds.Intersect(lineup.SubstitutePlayerIds));
         Assert.All(lineup.StartingPlayerIds.Concat(lineup.SubstitutePlayerIds), playerId => Assert.Contains(playerId, playerClub.PlayerIds));
         Assert.Contains(lineup.StartingPlayerIds, playerId => gameState.Players[playerId].Position == PlayerPosition.Goalkeeper);
+        Assert.Equal("Ada Coach", gameState.Manager.Name);
+        Assert.Equal("3-5-2", gameState.Manager.PreferredFormation);
+        Assert.Equal("Analytical", gameState.Manager.Personality);
+        Assert.Equal("3-5-2", playerClub.Formation);
+        Assert.Equal(1, gameState.CurrentSeason);
+        Assert.Equal(300, gameState.HistoricalLeagueTableArchive.Count);
+        Assert.Equal(100, gameState.HistoricalLeagueTableArchive.Select(record => record.Season).Distinct().Count());
+        Assert.Equal(DateTime.UtcNow.Year - 100, gameState.HistoricalStartYear);
+        Assert.Equal(DateTime.UtcNow.Year - 1, gameState.HistoricalEndYear);
+        Assert.NotNull(gameState.HistoricalWorldGeneratedAt);
+        Assert.Equal(300, gameState.HistoricalSeasonAwards.Count);
+        Assert.Equal(300, gameState.HistoricalTitlesByClub.Values.Sum());
+        Assert.Empty(gameState.HallOfFame.TitlesByClub);
+        Assert.Empty(gameState.Achievements);
+        Assert.All(gameState.Clubs.Values, club =>
+        {
+            Assert.Equal(0, club.GetMatchesPlayed());
+            Assert.Equal(0, club.GetPoints());
+        });
+        var expectedClubsByDivision = gameState.Clubs.Values
+            .GroupBy(club => club.Division)
+            .ToDictionary(group => group.Key, group => group.Count());
+        Assert.All(gameState.HistoricalLeagueTableArchive, table =>
+        {
+            var expectedClubCount = expectedClubsByDivision[table.Division];
+            Assert.Equal(expectedClubCount, table.Rows.Count);
+            Assert.Equal(Enumerable.Range(1, expectedClubCount), table.Rows.Select(row => row.Position));
+            Assert.All(table.Rows, row =>
+            {
+                Assert.Equal(row.Played, row.Wins + row.Draws + row.Losses);
+                Assert.Equal(row.GoalsFor - row.GoalsAgainst, row.GoalDifference);
+                Assert.Equal(row.Wins * 3 + row.Draws, row.Points);
+            });
+        });
+        var initialRollOfHonour = new HistoryService().GetRollOfHonour(gameState);
+        Assert.Equal(100, initialRollOfHonour.Count);
+        Assert.All(initialRollOfHonour, entry =>
+        {
+            Assert.NotEqual("-", entry.SerieAChampion);
+            Assert.NotEqual("-", entry.SerieBChampion);
+            Assert.NotEqual("-", entry.SerieCChampion);
+        });
+        var repeatedGeneration = new HistoricalWorldGenerator().Generate(gameState, years: 100);
+        Assert.Equal(100, repeatedGeneration.YearsGenerated);
+        Assert.Equal(300, gameState.HistoricalLeagueTableArchive.Count);
+        Assert.Equal(300, gameState.HistoricalSeasonAwards.Count);
+        Assert.Equal(300, new HistoryService().GetTitleHistory(gameState).Sum(entry => entry.Titles));
+        Assert.Equal(gameState.Clubs.Count, gameState.Lineups.Count);
+        Assert.All(gameState.Clubs.Values, club =>
+        {
+            Assert.Equal(23, club.PlayerIds.Count);
+            Assert.All(club.PlayerIds, playerId => Assert.True(gameState.Players.ContainsKey(playerId)));
+            var clubLineup = gameState.Lineups[club.Id];
+            Assert.Equal(11, clubLineup.StartingPlayerIds.Count);
+            Assert.Equal(12, clubLineup.SubstitutePlayerIds.Count);
+        });
     }
 
     [Fact]
@@ -49,7 +111,7 @@ public class GameManagerTests
         var currentLeague = gameState.GetCurrentLeague();
         Assert.NotNull(currentLeague);
 
-        foreach (var fixtureId in currentLeague!.FixtureIds)
+        foreach (var fixtureId in gameState.Leagues.Values.SelectMany(league => league.FixtureIds))
         {
             gameState.Fixtures[fixtureId].IsPlayed = true;
         }
@@ -75,12 +137,23 @@ public class GameManagerTests
         Assert.Equal(2, gameState.CurrentSeason);
         Assert.Equal(previousTitles + 1, champion.TitlesWon);
         Assert.Equal(1, gameState.HallOfFame.TitlesByClub[champion.Id]);
+        Assert.Contains(gameState.SeasonAwards, award => award.Title == "League Champion" && award.WinnerName == champion.Name);
+        Assert.Contains(gameState.SeasonAwards, award => award.Title == "Player of the Season");
+        Assert.Equal(3, gameState.SeasonAwards.Count(award => award.Title == "League Champion"));
+        Assert.NotEmpty(gameState.PlayerDevelopmentHistory);
+        Assert.Equal(3, gameState.LeagueTableArchive.Count);
         Assert.Equal(0, champion.SeasonWins);
         Assert.Equal(0, champion.GoalsFor);
         Assert.True(gameState.Fixtures.Count > previousFixtureCount);
         Assert.Equal(2, gameState.GetCurrentLeague()?.Season);
         Assert.All(gameState.MediaEvents, mediaEvent => Assert.True(mediaEvent.IsResolved));
         Assert.NotEmpty(gameState.TransferMarket);
+        var managerRecord = Assert.Single(gameState.HallOfFame.TopManagers);
+        Assert.Equal(1, managerRecord.Seasons);
+        Assert.Equal(10, managerRecord.MatchesPlayed);
+        Assert.Equal(10, managerRecord.MatchesWon);
+        Assert.Equal(100, managerRecord.WinPercentage);
+        Assert.Equal(1, managerRecord.Titles);
     }
 
     [Fact]
@@ -146,7 +219,7 @@ public class GameManagerTests
         var currentLeague = gameState.GetCurrentLeague();
         Assert.NotNull(currentLeague);
 
-        foreach (var fixtureId in currentLeague!.FixtureIds)
+        foreach (var fixtureId in gameState.Leagues.Values.SelectMany(league => league.FixtureIds))
         {
             gameState.Fixtures[fixtureId].IsPlayed = true;
         }
@@ -172,6 +245,59 @@ public class GameManagerTests
         Assert.Equal(2, gameState.GetCurrentLeague()?.Season);
     }
 
+    [Fact]
+    public async Task ProgressSeasonAsync_AtSeasonOneHundred_CompletesCareerWithoutCreatingSeason101()
+    {
+        var manager = new GameManager(new LeagueManager(), new ClubGenerator(), new InMemoryClubRepository());
+        var gameState = await manager.StartNewGameAsync("Real Madrid", Division.SerieA);
+        gameState.CurrentSeason = 100;
+        foreach (var league in gameState.Leagues.Values)
+        {
+            league.Season = 100;
+            foreach (var fixtureId in league.FixtureIds)
+            {
+                gameState.Fixtures[fixtureId].IsPlayed = true;
+            }
+        }
+
+        await manager.ProgressSeasonAsync(gameState);
+
+        Assert.True(gameState.IsCareerComplete);
+        Assert.Equal(100, gameState.CurrentSeason);
+        Assert.DoesNotContain(gameState.Leagues.Values, league => league.Season == 101);
+        Assert.Equal(3, gameState.SeasonAwards.Count(award => award.Title == "League Champion"));
+    }
+
+    [Fact]
+    public async Task LoadGameAsync_BackfillsMissingAiSquadsAndLineups()
+    {
+        var playerClub = CreateClub("Player Club", Division.SerieA);
+        var aiClub = CreateClub("AI Club", Division.SerieA);
+        var gameState = new GameState
+        {
+            SaveId = Guid.NewGuid(),
+            PlayerClubId = playerClub.Id,
+            CurrentSeason = 7,
+            Clubs = new Dictionary<Guid, Club>
+            {
+                [playerClub.Id] = playerClub,
+                [aiClub.Id] = aiClub
+            }
+        };
+        var saveRepository = new InMemoryGameSaveRepository(gameState);
+        var manager = new GameManager(
+            new LeagueManager(),
+            new ClubGenerator(),
+            new InMemoryClubRepository(),
+            saveRepository);
+
+        var loaded = await manager.LoadGameAsync(gameState.SaveId);
+
+        Assert.All(loaded.Clubs.Values, club => Assert.Equal(23, club.PlayerIds.Count));
+        Assert.All(loaded.Clubs.Values, club => Assert.True(loaded.Lineups.ContainsKey(club.Id)));
+        Assert.All(loaded.Players.Values, player => Assert.True(player.ContractExpiresSeason >= 9));
+    }
+
     private static void SetOrderedDivisionTable(GameState gameState, Division division)
     {
         var clubs = gameState.Clubs.Values
@@ -188,6 +314,35 @@ public class GameManagerTests
             club.GoalsFor = clubs.Count - index;
             club.GoalsAgainst = index;
         }
+    }
+
+    private static Club CreateClub(string name, Division division)
+    {
+        return new Club
+        {
+            Id = Guid.NewGuid(),
+            Name = name,
+            Abbreviation = name[..Math.Min(3, name.Length)].ToUpperInvariant(),
+            City = name,
+            Division = division,
+            Reputation = 10,
+            Stadium = new Stadium { Name = $"{name} Stadium", Capacity = 20000 }
+        };
+    }
+
+    private sealed class InMemoryGameSaveRepository(GameState gameState) : IGameSaveRepository
+    {
+        public Task SaveAsync(GameState state, string saveName) => Task.CompletedTask;
+
+        public Task<GameState?> LoadAsync(Guid saveId) =>
+            Task.FromResult<GameState?>(saveId == gameState.SaveId ? gameState : null);
+
+        public Task<IEnumerable<FM100.Core.Repositories.GameSaveInfo>> GetAllSavesAsync() =>
+            Task.FromResult<IEnumerable<FM100.Core.Repositories.GameSaveInfo>>([]);
+
+        public Task DeleteAsync(Guid saveId) => Task.CompletedTask;
+
+        public Task<bool> ExistsAsync(Guid saveId) => Task.FromResult(saveId == gameState.SaveId);
     }
 
     private sealed class InMemoryClubRepository : IClubRepository
