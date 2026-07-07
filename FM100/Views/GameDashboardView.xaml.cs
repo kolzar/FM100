@@ -38,6 +38,7 @@ namespace FM100.Views
         private ICompetitionSimulationService? _competitionSimulationService;
         private ITacticalPlanningService? _tacticalPlanningService;
         private IScoutingService? _scoutingService;
+        private IPersonDirectoryService? _personDirectoryService;
         private Division _selectedStandingsDivision = Division.SerieA;
 
         public GameDashboardView()
@@ -70,7 +71,8 @@ namespace FM100.Views
             IPlayerPerformanceService? playerPerformanceService = null,
             ICompetitionSimulationService? competitionSimulationService = null,
             ITacticalPlanningService? tacticalPlanningService = null,
-            IScoutingService? scoutingService = null)
+            IScoutingService? scoutingService = null,
+            IPersonDirectoryService? personDirectoryService = null)
         {
             _gameState = gameState ?? throw new ArgumentNullException(nameof(gameState));
             _gameManager = gameManager;
@@ -94,9 +96,11 @@ namespace FM100.Views
             _competitionSimulationService = competitionSimulationService;
             _tacticalPlanningService = tacticalPlanningService;
             _scoutingService = scoutingService;
+            _personDirectoryService = personDirectoryService;
             _selectedStandingsDivision = gameState.GetPlayerClub()?.Division ?? Division.SerieA;
 
             RefreshUI();
+            InitializePersonSearch();
         }
 
         private void RefreshUI()
@@ -379,6 +383,13 @@ namespace FM100.Views
             Logger.Information("GameDashboard", "History view shown");
         }
 
+        private void SearchBtn_Click(object sender, RoutedEventArgs e)
+        {
+            ShowOnly(SearchContent);
+            PopulatePersonSearch();
+            Logger.Information("GameDashboard", "Person search view shown");
+        }
+
         private void ShowOnly(Border contentBorder)
         {
             DashboardContent.Visibility = Visibility.Collapsed;
@@ -387,9 +398,84 @@ namespace FM100.Views
             ResultsContent.Visibility = Visibility.Collapsed;
             SquadContent.Visibility = Visibility.Collapsed;
             TransfersContent.Visibility = Visibility.Collapsed;
+            SearchContent.Visibility = Visibility.Collapsed;
             HistoryContent.Visibility = Visibility.Collapsed;
 
             contentBorder.Visibility = Visibility.Visible;
+        }
+
+        private void InitializePersonSearch()
+        {
+            if (_gameState == null)
+            {
+                return;
+            }
+
+            GetPersonDirectoryService().EnsureDirectory(_gameState);
+            PersonClubComboBox.ItemsSource = new[] { new PersonClubFilter(null, "All clubs") }
+                .Concat(_gameState.Clubs.Values
+                    .OrderBy(club => club.Name)
+                    .Select(club => new PersonClubFilter(club.Id, club.Name)))
+                .ToList();
+            PersonClubComboBox.SelectedIndex = 0;
+        }
+
+        private void PersonSearch_Click(object sender, RoutedEventArgs e) => PopulatePersonSearch();
+
+        private void PersonSearchFilter_Changed(object sender, RoutedEventArgs e)
+        {
+            if (_gameState != null && SearchContent?.Visibility == Visibility.Visible)
+            {
+                PopulatePersonSearch();
+            }
+        }
+
+        private void PopulatePersonSearch()
+        {
+            if (_gameState == null)
+            {
+                return;
+            }
+
+            var category = PersonCategory.All;
+            if (PersonCategoryComboBox.SelectedItem is ComboBoxItem { Tag: string categoryName })
+            {
+                Enum.TryParse(categoryName, out category);
+            }
+            var clubId = (PersonClubComboBox.SelectedItem as PersonClubFilter)?.ClubId;
+            var selectedPersonId = (PersonSearchResultsGrid.SelectedItem as PersonSearchEntry)?.PersonId;
+            var rows = GetPersonDirectoryService()
+                .Search(_gameState, PersonSearchTextBox.Text, category, clubId)
+                .ToList();
+            PersonSearchResultsGrid.ItemsSource = rows;
+            var playerCount = rows.Count(row => row.Category == PersonCategory.Players);
+            var staffCount = rows.Count(row => row.Category == PersonCategory.Staff);
+            var executiveCount = rows.Count(row => row.Category == PersonCategory.Executives);
+            PersonSearchSummaryText.Text = $"{rows.Count} people | {playerCount} players | {staffCount} staff | {executiveCount} executives";
+
+            PersonSearchResultsGrid.SelectedItem = rows.FirstOrDefault(row => row.PersonId == selectedPersonId) ?? rows.FirstOrDefault();
+            if (rows.Count == 0)
+            {
+                ShowPersonDetail(null);
+            }
+        }
+
+        private void PersonSearchResults_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_gameState == null || PersonSearchResultsGrid.SelectedItem is not PersonSearchEntry selected)
+            {
+                return;
+            }
+
+            ShowPersonDetail(GetPersonDirectoryService().GetDetail(_gameState, selected.PersonId));
+        }
+
+        private void ShowPersonDetail(PersonDetail? detail)
+        {
+            PersonDetailNameText.Text = detail?.FullName ?? "No person selected";
+            PersonDetailSubtitleText.Text = detail?.Subtitle ?? "Change the search filters to find a person.";
+            PersonDetailClubText.Text = detail?.ClubName ?? string.Empty;
+            PersonDetailPropertiesGrid.ItemsSource = detail?.Properties ?? [];
         }
 
         private void PopulateStandings()
@@ -1600,6 +1686,8 @@ namespace FM100.Views
 
         private sealed record LineupPlayerRow(Guid PlayerId, string DisplayText);
 
+        private sealed record PersonClubFilter(Guid? ClubId, string Name);
+
         private sealed class TransferCandidateRow
         {
             public TransferCandidateRow(
@@ -2364,6 +2452,11 @@ namespace FM100.Views
         private IScoutingService GetScoutingService()
         {
             return _scoutingService ??= new FM100.Core.Management.Implementation.ScoutingService();
+        }
+
+        private IPersonDirectoryService GetPersonDirectoryService()
+        {
+            return _personDirectoryService ??= new FM100.Core.Management.Implementation.PersonDirectoryService();
         }
 
         private void PlayFixture_Click(object sender, RoutedEventArgs e)

@@ -51,6 +51,7 @@ public static class GameManagementServiceCollectionExtensions
         services.AddSingleton<IFinanceService, FinanceService>();
         services.AddSingleton<IPlayerPerformanceService, PlayerPerformanceService>();
         services.AddSingleton<IHistoricalWorldGenerator, HistoricalWorldGenerator>();
+        services.AddSingleton<IPersonDirectoryService, PersonDirectoryService>();
 
         // Register GameManager with optional IGameSaveRepository for persistence
         services.AddSingleton<IGameManager>(sp =>
@@ -69,6 +70,7 @@ public static class GameManagementServiceCollectionExtensions
             var achievementService = sp.GetRequiredService<IAchievementService>();
             var staffLifecycleService = sp.GetRequiredService<IStaffLifecycleService>();
             var historicalWorldGenerator = sp.GetRequiredService<IHistoricalWorldGenerator>();
+            var personDirectoryService = sp.GetRequiredService<IPersonDirectoryService>();
 
             // Try to resolve IGameSaveRepository if available (registered by data layer)
             var gameSaveRepository = sp.GetService<IGameSaveRepository>();
@@ -88,7 +90,8 @@ public static class GameManagementServiceCollectionExtensions
                 leagueTableArchiveService,
                 achievementService,
                 staffLifecycleService,
-                historicalWorldGenerator);
+                historicalWorldGenerator,
+                personDirectoryService);
         });
 
         return services;

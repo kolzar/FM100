@@ -3,6 +3,7 @@ using FM100.Core.Repositories;
 using FM100.Core.GameState;
 using FM100.Domain.Club;
 using FM100.Domain.FootballPlayer;
+using FM100.Domain.Competition;
 
 namespace FM100.UnitTest.Core.Management;
 
@@ -48,6 +49,21 @@ public class GameManagerTests
         Assert.Equal("Analytical", gameState.Manager.Personality);
         Assert.Equal("3-5-2", playerClub.Formation);
         Assert.Equal(1, gameState.CurrentSeason);
+        Assert.Equal(48, gameState.Clubs.Count);
+        Assert.All(Enum.GetValues<Division>(), division =>
+            Assert.Equal(16, gameState.Clubs.Values.Count(club => club.Division == division)));
+        Assert.Equal(4, gameState.CupCompetitions.Count);
+        Assert.All(gameState.CupCompetitions.Values.Where(cup => cup.Type != CupType.MasterCup), cup =>
+        {
+            Assert.Equal(16, cup.ClubIds.Count);
+            Assert.Equal(8, cup.Fixtures.Count);
+            Assert.Empty(cup.ByeClubIds);
+        });
+        var masterCup = Assert.Single(gameState.CupCompetitions.Values, cup => cup.Type == CupType.MasterCup);
+        Assert.Equal(48, masterCup.ClubIds.Count);
+        Assert.Equal(48, masterCup.ClubIds.Distinct().Count());
+        Assert.Equal(16, masterCup.ByeClubIds.Count);
+        Assert.Equal(16, masterCup.Fixtures.Count);
         Assert.Equal(300, gameState.HistoricalLeagueTableArchive.Count);
         Assert.Equal(100, gameState.HistoricalLeagueTableArchive.Select(record => record.Season).Distinct().Count());
         Assert.Equal(DateTime.UtcNow.Year - 100, gameState.HistoricalStartYear);
@@ -90,6 +106,9 @@ public class GameManagerTests
         Assert.Equal(300, gameState.HistoricalLeagueTableArchive.Count);
         Assert.Equal(300, gameState.HistoricalSeasonAwards.Count);
         Assert.Equal(300, new HistoryService().GetTitleHistory(gameState).Sum(entry => entry.Titles));
+        Assert.Equal(gameState.Clubs.Count * Enum.GetValues<FM100.Domain.Personnel.PersonnelRole>().Length, gameState.Personnel.Count);
+        Assert.All(gameState.Clubs.Values, club => Assert.Equal(Enum.GetValues<FM100.Domain.Personnel.PersonnelRole>().Length, club.StaffIds.Count));
+        Assert.Contains(gameState.Personnel.Values, person => person.IsHumanManager && person.ClubId == playerClub.Id);
         Assert.Equal(gameState.Clubs.Count, gameState.Lineups.Count);
         Assert.All(gameState.Clubs.Values, club =>
         {

@@ -2,6 +2,8 @@ using FM100.Domain.Club;
 using FM100.Domain.FootballPlayer;
 using FM100.Domain.League;
 using FM100.Core.Management;
+using FM100.Domain.Personnel;
+using FM100.Domain.Competition;
 
 namespace FM100.Core.GameState;
 
@@ -56,6 +58,11 @@ public class GameState
     public Dictionary<Guid, Fixture> Fixtures { get; set; } = [];
 
     /// <summary>
+    /// Division cups and the 48-club Master Cup for every season.
+    /// </summary>
+    public Dictionary<Guid, CupCompetition> CupCompetitions { get; set; } = [];
+
+    /// <summary>
     /// All completed matches for the active game.
     /// </summary>
     public Dictionary<Guid, Match> Matches { get; set; } = [];
@@ -64,6 +71,11 @@ public class GameState
     /// All generated players available in the active game.
     /// </summary>
     public Dictionary<Guid, FootballPlayer> Players { get; set; } = [];
+
+    /// <summary>
+    /// Coaches, medical staff, scouts and club executives in the searchable world directory.
+    /// </summary>
+    public Dictionary<Guid, ClubPerson> Personnel { get; set; } = [];
 
     /// <summary>
     /// Selected lineups by club ID.

@@ -245,6 +245,7 @@ namespace FM100
             var competitionSimulationService = app?.GetServiceProvider().GetService(typeof(ICompetitionSimulationService)) as ICompetitionSimulationService;
             var tacticalPlanningService = app?.GetServiceProvider().GetService(typeof(ITacticalPlanningService)) as ITacticalPlanningService;
             var scoutingService = app?.GetServiceProvider().GetService(typeof(IScoutingService)) as IScoutingService;
+            var personDirectoryService = app?.GetServiceProvider().GetService(typeof(IPersonDirectoryService)) as IPersonDirectoryService;
 
             var dashboard = new GameDashboardView();
             dashboard.Initialize(
@@ -269,7 +270,8 @@ namespace FM100
                 playerPerformanceService,
                 competitionSimulationService,
                 tacticalPlanningService,
-                scoutingService);
+                scoutingService,
+                personDirectoryService);
             ViewHost.Content = dashboard;
         }
 

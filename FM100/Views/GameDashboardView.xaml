@@ -39,6 +39,7 @@
                 <Button x:Name="ResultsButton" Content="✅ RESULTS" Height="50" Foreground="{DynamicResource PrimaryTextBrush}" Background="{DynamicResource TertiaryBackgroundBrush}" FontSize="12" FontWeight="Bold" Cursor="Hand" Click="ResultsBtn_Click" Margin="0"/>
                 <Button x:Name="SquadButton" Content="👥 SQUAD" Height="50" Foreground="{DynamicResource PrimaryTextBrush}" Background="{DynamicResource TertiaryBackgroundBrush}" FontSize="12" FontWeight="Bold" Cursor="Hand" Click="SquadBtn_Click" Margin="0"/>
                 <Button x:Name="TransfersButton" Content="💼 TRANSFERS" Height="50" Foreground="{DynamicResource PrimaryTextBrush}" Background="{DynamicResource TertiaryBackgroundBrush}" FontSize="12" FontWeight="Bold" Cursor="Hand" Click="TransfersBtn_Click" Margin="0"/>
+                <Button x:Name="SearchButton" Content="🔎 SEARCH" Height="50" Foreground="{DynamicResource PrimaryTextBrush}" Background="{DynamicResource TertiaryBackgroundBrush}" FontSize="12" FontWeight="Bold" Cursor="Hand" Click="SearchBtn_Click" Margin="0"/>
                 <Button x:Name="HistoryButton" Content="📜 HISTORY" Height="50" Foreground="{DynamicResource PrimaryTextBrush}" Background="{DynamicResource TertiaryBackgroundBrush}" FontSize="12" FontWeight="Bold" Cursor="Hand" Click="HistoryBtn_Click" Margin="0"/>
                 <Button x:Name="SaveButton" Content="💾 SAVE" Height="50" Foreground="{DynamicResource PrimaryTextBrush}" Background="{DynamicResource InputBackgroundBrush}" FontSize="12" FontWeight="Bold" Cursor="Hand" Click="Save_Click" Margin="0"/>
                 <Button x:Name="MenuButton" Content="🏠 MENU" Height="50" Foreground="{DynamicResource InverseTextBrush}" Background="{DynamicResource DangerBrush}" FontSize="12" FontWeight="Bold" Cursor="Hand" Click="Menu_Click" Margin="0"/>
@@ -729,6 +730,61 @@
                                     </DataTemplate>
                                 </ListBox.ItemTemplate>
                             </ListBox>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- SEARCH CONTENT -->
+                    <Border x:Name="SearchContent" Visibility="Collapsed" Background="{DynamicResource PanelBackgroundBrush}" Padding="20" CornerRadius="5" Margin="0,0,0,20">
+                        <StackPanel>
+                            <TextBlock Text="PERSON SEARCH" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource AccentBrush}" Margin="0,0,0,14"/>
+                            <Grid Margin="0,0,0,12">
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="180"/><ColumnDefinition Width="240"/><ColumnDefinition Width="110"/></Grid.ColumnDefinitions>
+                                <TextBox x:Name="PersonSearchTextBox" Height="34" Padding="9,5" Background="{DynamicResource InputBackgroundBrush}" Foreground="{DynamicResource PrimaryTextBrush}" BorderBrush="{DynamicResource BorderBrush}" TextChanged="PersonSearchFilter_Changed" ToolTip="Search by name, role, club, nationality or person type"/>
+                                <ComboBox x:Name="PersonCategoryComboBox" Grid.Column="1" Height="34" Margin="8,0,0,0" Background="{DynamicResource InputBackgroundBrush}" Foreground="{DynamicResource PrimaryTextBrush}" SelectionChanged="PersonSearchFilter_Changed" SelectedIndex="0">
+                                    <ComboBoxItem Content="All people" Tag="All"/><ComboBoxItem Content="Players" Tag="Players"/><ComboBoxItem Content="Staff" Tag="Staff"/><ComboBoxItem Content="Executives" Tag="Executives"/>
+                                </ComboBox>
+                                <ComboBox x:Name="PersonClubComboBox" Grid.Column="2" Height="34" Margin="8,0,0,0" Background="{DynamicResource InputBackgroundBrush}" Foreground="{DynamicResource PrimaryTextBrush}" DisplayMemberPath="Name" SelectionChanged="PersonSearchFilter_Changed"/>
+                                <Button Grid.Column="3" Content="SEARCH" Height="34" Margin="8,0,0,0" Click="PersonSearch_Click" Foreground="{DynamicResource InverseTextBrush}" Background="{DynamicResource AccentBrush}" FontWeight="Bold" Cursor="Hand"/>
+                            </Grid>
+                            <TextBlock x:Name="PersonSearchSummaryText" Text="0 people" Foreground="{DynamicResource SecondaryTextBrush}" FontSize="11" Margin="0,0,0,8"/>
+                            <Grid>
+                                <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                                <DataGrid x:Name="PersonSearchResultsGrid" Style="{StaticResource StandingsDataGridStyle}" AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False" CanUserDeleteRows="False" CanUserReorderColumns="True" CanUserResizeColumns="True" CanUserSortColumns="True" HeadersVisibility="Column" GridLinesVisibility="Horizontal" RowHeaderWidth="0" RowHeight="30" ColumnHeaderHeight="32" Height="430" SelectionMode="Single" SelectionChanged="PersonSearchResults_SelectionChanged">
+                                    <DataGrid.Resources>
+                                        <Style x:Key="SearchTextCell" TargetType="TextBlock"><Setter Property="VerticalAlignment" Value="Center"/><Setter Property="TextTrimming" Value="CharacterEllipsis"/><Setter Property="Margin" Value="6,0"/></Style>
+                                        <Style x:Key="SearchNumberCell" TargetType="TextBlock"><Setter Property="HorizontalAlignment" Value="Center"/><Setter Property="VerticalAlignment" Value="Center"/><Setter Property="FontWeight" Value="SemiBold"/></Style>
+                                    </DataGrid.Resources>
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn Header="TYPE" Binding="{Binding PersonType}" SortMemberPath="PersonType" Width="95" ElementStyle="{StaticResource SearchTextCell}"/>
+                                        <DataGridTextColumn Header="NAME" Binding="{Binding FullName}" SortMemberPath="FullName" Width="2*" MinWidth="190" ElementStyle="{StaticResource SearchTextCell}"/>
+                                        <DataGridTextColumn Header="ROLE" Binding="{Binding Role}" SortMemberPath="Role" Width="1.5*" MinWidth="145" ElementStyle="{StaticResource SearchTextCell}"/>
+                                        <DataGridTextColumn Header="CLUB" Binding="{Binding ClubName}" SortMemberPath="ClubName" Width="1.5*" MinWidth="150" ElementStyle="{StaticResource SearchTextCell}"/>
+                                        <DataGridTextColumn Header="AGE" Binding="{Binding Age}" SortMemberPath="Age" Width="60" ElementStyle="{StaticResource SearchNumberCell}"/>
+                                        <DataGridTextColumn Header="NAT" Binding="{Binding Nationality}" SortMemberPath="Nationality" Width="110" ElementStyle="{StaticResource SearchTextCell}"/>
+                                        <DataGridTextColumn Header="REP" Binding="{Binding Reputation}" SortMemberPath="Reputation" Width="65" ElementStyle="{StaticResource SearchNumberCell}"/>
+                                        <DataGridTextColumn Header="STATUS" Binding="{Binding Status}" SortMemberPath="Status" Width="135" ElementStyle="{StaticResource SearchTextCell}"/>
+                                    </DataGrid.Columns>
+                                </DataGrid>
+                                <Border Grid.Row="1" Margin="0,16,0,0" Padding="14" Background="{DynamicResource PrimaryBackgroundBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4">
+                                    <Grid>
+                                        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                                        <Grid Margin="0,0,0,12">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="2*"/><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                            <TextBlock x:Name="PersonDetailNameText" Text="Select a person" FontSize="17" FontWeight="Bold" Foreground="{DynamicResource AccentBrush}" TextWrapping="Wrap" VerticalAlignment="Center"/>
+                                            <TextBlock x:Name="PersonDetailSubtitleText" Grid.Column="1" Text="Player, staff or executive details" FontSize="12" Foreground="{DynamicResource PrimaryTextBrush}" VerticalAlignment="Center" Margin="12,0" TextWrapping="Wrap"/>
+                                            <TextBlock x:Name="PersonDetailClubText" Grid.Column="2" Text="" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource SecondaryTextBrush}" HorizontalAlignment="Right" VerticalAlignment="Center" TextWrapping="Wrap" TextAlignment="Right"/>
+                                        </Grid>
+                                        <DataGrid x:Name="PersonDetailPropertiesGrid" Grid.Row="1" Style="{StaticResource StandingsDataGridStyle}" AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False" CanUserDeleteRows="False" CanUserReorderColumns="True" CanUserResizeColumns="True" CanUserSortColumns="True" HeadersVisibility="Column" GridLinesVisibility="Horizontal" RowHeaderWidth="0" RowHeight="29" ColumnHeaderHeight="32" Height="360">
+                                            <DataGrid.Resources><Style x:Key="DetailCell" TargetType="TextBlock"><Setter Property="VerticalAlignment" Value="Center"/><Setter Property="TextTrimming" Value="CharacterEllipsis"/><Setter Property="Margin" Value="6,0"/></Style></DataGrid.Resources>
+                                        <DataGrid.Columns>
+                                            <DataGridTextColumn Header="GROUP" Binding="{Binding Group}" SortMemberPath="Group" Width="*" MinWidth="180" ElementStyle="{StaticResource DetailCell}"/>
+                                            <DataGridTextColumn Header="PROPERTY" Binding="{Binding Name}" SortMemberPath="Name" Width="2*" MinWidth="240" ElementStyle="{StaticResource DetailCell}"/>
+                                            <DataGridTextColumn Header="VALUE" Binding="{Binding Value}" SortMemberPath="Value" Width="2*" MinWidth="240" ElementStyle="{StaticResource DetailCell}"/>
+                                        </DataGrid.Columns>
+                                    </DataGrid>
+                                    </Grid>
+                                </Border>
+                            </Grid>
                         </StackPanel>
                     </Border>
 

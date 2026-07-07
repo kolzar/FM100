@@ -18,7 +18,7 @@ public class ClubGenerator
         "Estádio da Luz", "Stadio Giuseppe Meazza", "Stamford Bridge", "Signal Iduna Park"
     };
 
-    // Serie A clubs (Top tier - 20 clubs)
+    // Serie A clubs (Top tier - 16 active clubs)
     private readonly string[] _serieAClubs = new[]
     {
         "Real Madrid", "Manchester City", "Bayern Monaco", "Liverpool",
@@ -37,12 +37,13 @@ public class ClubGenerator
         "Dinamo Zagabria", "Lille", "Galatasaray", "Olympique Marsiglia"
     };
 
-    // Serie C clubs (Third tier - 12 clubs)
+    // Serie C clubs (Third tier - 16 clubs)
     private readonly string[] _serieCClubs = new[]
     {
         "Rangers", "Fenerbahçe", "Braga", "Celtic",
         "Union Saint-Gilloise", "PAOK", "Olympiacos", "Basilea",
-        "Young Boys", "Copenaghen", "Bodo/Glimt", "Aston Villa"
+        "Young Boys", "Copenaghen", "Bodo/Glimt", "Aston Villa",
+        "Slavia Praga", "Stella Rossa", "Anderlecht", "Besiktas"
     };
 
     private readonly string[] _europeanCities = new[]

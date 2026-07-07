@@ -3,7 +3,7 @@
 ## Current Verified State
 
 - Build: `dotnet build D:\My\github\FM100\FM100.sln` passes with 0 warnings.
-- Tests: `dotnet test D:\My\github\FM100\FM100.UnitTest\FM100.UnitTest.csproj --no-restore` passes, 150/150.
+- Tests: `dotnet test D:\My\github\FM100\FM100.UnitTest\FM100.UnitTest.csproj --no-restore` passes, 153/153.
 - NuGet vulnerability scan is clean.
 - Main flow is active: Splash -> Menu -> Club Selection -> Coach Creation -> Game Dashboard.
 - Implemented recently:
@@ -97,6 +97,8 @@
   - Standings and simulation feedback refinement: Serie A/B/C overviews and detailed standings use theme-aware aligned DataGrid columns; play/season/decade simulation reports per-match percentage, round, division, latest score, goals, and 1/X/2 statistics live.
   - 100-year Albo d'Oro: History exposes one row per season with the Serie A, Serie B, and Serie C champion, backed by final-table archives with award fallback and verified as 100 seasons / 300 champions.
   - Pre-game 100-year world history: every new game is born with the previous 100 completed calendar seasons already generated (300 full Serie A/B/C tables, 300 champions, and historical title totals). This history is separate from manager-career statistics and does not advance or mutate playable season 1.
+  - Unified person directory: every club receives persistent technical, medical, scouting, and executive personnel; the sidebar Search view finds players, staff, and executives by name, role, nationality, or club and opens a complete property sheet for the selected person.
+  - 48-club competition structure: Serie A, Serie B, and Serie C each contain exactly 16 clubs; every season persists a 16-club cup for each division plus a Master Cup involving all 48 clubs, with preliminary fixtures and seeded byes.
 
 ## Documentation Reconciliation
 

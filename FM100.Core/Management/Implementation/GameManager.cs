@@ -30,6 +30,7 @@ public class GameManager : IGameManager
     private readonly IAchievementService _achievementService;
     private readonly IStaffLifecycleService _staffLifecycleService;
     private readonly IHistoricalWorldGenerator _historicalWorldGenerator;
+    private readonly IPersonDirectoryService _personDirectoryService;
     private readonly ILogger<GameManager>? _logger;
 
     /// <summary>
@@ -54,6 +55,7 @@ public class GameManager : IGameManager
         IAchievementService? achievementService = null,
         IStaffLifecycleService? staffLifecycleService = null,
         IHistoricalWorldGenerator? historicalWorldGenerator = null,
+        IPersonDirectoryService? personDirectoryService = null,
         ILogger<GameManager>? logger = null)
     {
         _leagueManager = leagueManager ?? throw new ArgumentNullException(nameof(leagueManager));
@@ -71,6 +73,7 @@ public class GameManager : IGameManager
         _achievementService = achievementService ?? new AchievementService();
         _staffLifecycleService = staffLifecycleService ?? new StaffLifecycleService();
         _historicalWorldGenerator = historicalWorldGenerator ?? new HistoricalWorldGenerator();
+        _personDirectoryService = personDirectoryService ?? new PersonDirectoryService();
         _logger = logger;
     }
 
@@ -175,12 +178,14 @@ public class GameManager : IGameManager
                 TransferMarket = CreateTransferListings(transferPlayers, selectedDivision),
                 Leagues = leagues,
                 Fixtures = fixtures,
+                CupCompetitions = CupCompetitionGenerator.Generate(clubs, 1),
                 Difficulty = difficulty,
                 CreatedAt = DateTime.UtcNow,
                 LastSavedAt = DateTime.UtcNow
             };
 
             var history = _historicalWorldGenerator.Generate(gameState, years: 100);
+            _personDirectoryService.EnsureDirectory(gameState);
             _logger?.LogInformation(
                 "Generated pre-game history: Years={Years}, Tables={Tables}, Champions={Champions}, Range={Start}-{End}",
                 history.YearsGenerated,
@@ -412,6 +417,8 @@ public class GameManager : IGameManager
                 if (gameState != null)
                 {
                     EnsureWorldSquads(gameState);
+                    CupCompetitionGenerator.EnsureCurrentSeason(gameState);
+                    _personDirectoryService.EnsureDirectory(gameState);
                     _logger?.LogInformation("Game loaded from database successfully");
                     return gameState;
                 }
@@ -426,6 +433,8 @@ public class GameManager : IGameManager
             }
 
             EnsureWorldSquads(inMemoryGameState);
+            CupCompetitionGenerator.EnsureCurrentSeason(inMemoryGameState);
+            _personDirectoryService.EnsureDirectory(inMemoryGameState);
             _logger?.LogInformation("Game loaded from memory successfully");
             return await Task.FromResult(inMemoryGameState);
         }
@@ -628,6 +637,11 @@ public class GameManager : IGameManager
             {
                 gameState.CurrentLeagueId = newLeague.Id;
             }
+        }
+
+        foreach (var competition in CupCompetitionGenerator.Generate(gameState.Clubs.Values, gameState.CurrentSeason).Values)
+        {
+            gameState.CupCompetitions[competition.Id] = competition;
         }
     }
 
