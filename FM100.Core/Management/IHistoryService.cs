@@ -14,6 +14,8 @@ public interface IHistoryService
 
     IReadOnlyList<RollOfHonourEntry> GetRollOfHonour(GameState.GameState gameState, int take = 100);
 
+    IReadOnlyList<CupRollOfHonourEntry> GetCupRollOfHonour(GameState.GameState gameState, int take = 100);
+
     IReadOnlyList<ClubSeasonHistoryEntry> GetClubSeasonHistory(GameState.GameState gameState, Guid clubId, int take = 100);
 
     ClubCareerSummary GetClubCareerSummary(GameState.GameState gameState, Guid clubId);

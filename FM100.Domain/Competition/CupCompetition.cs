@@ -20,6 +20,18 @@ public sealed class CupFixture
     public string RoundName { get; set; } = string.Empty;
     public Guid HomeClubId { get; set; }
     public Guid AwayClubId { get; set; }
+    public int? HomeGoals { get; set; }
+    public int? AwayGoals { get; set; }
     public Guid? WinnerClubId { get; set; }
     public bool IsPlayed { get; set; }
+}
+
+public sealed class HistoricalCupRecord
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public int Season { get; set; }
+    public CupType Type { get; set; }
+    public string CompetitionName { get; set; } = string.Empty;
+    public Guid ChampionClubId { get; set; }
+    public string ChampionClubName { get; set; } = string.Empty;
 }

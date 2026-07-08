@@ -2,6 +2,7 @@ using FM100.Core.GameState;
 using FM100.Core.Management;
 using FM100.Core.Management.Implementation;
 using FM100.Domain.Club;
+using FM100.Domain.Competition;
 
 namespace FM100.UnitTest.Core.Management;
 
@@ -184,6 +185,45 @@ public class HistoryServiceTests
         Assert.Equal("Aurora", entry.SerieAChampion);
         Assert.Equal("Boreale", entry.SerieBChampion);
         Assert.Equal("-", entry.SerieCChampion);
+    }
+
+    [Fact]
+    public void GetCupRollOfHonour_ReturnsHistoricalAndCurrentCupWinners()
+    {
+        var gameState = new GameState
+        {
+            HistoricalEndYear = 2025
+        };
+        gameState.HistoricalCupArchive.AddRange(
+        [
+            new HistoricalCupRecord { Season = 2025, Type = CupType.SerieACup, ChampionClubName = "Aurora" },
+            new HistoricalCupRecord { Season = 2025, Type = CupType.SerieBCup, ChampionClubName = "Boreale" },
+            new HistoricalCupRecord { Season = 2025, Type = CupType.SerieCCup, ChampionClubName = "Centrale" },
+            new HistoricalCupRecord { Season = 2025, Type = CupType.MasterCup, ChampionClubName = "Aurora" }
+        ]);
+
+        var currentChampionId = Guid.NewGuid();
+        gameState.Clubs[currentChampionId] = CreateClub("Delta", Division.SerieA);
+        gameState.CupCompetitions[Guid.NewGuid()] = new CupCompetition
+        {
+            Name = "Master Cup",
+            Type = CupType.MasterCup,
+            Season = 1,
+            ChampionClubId = currentChampionId,
+            IsComplete = true
+        };
+
+        var history = new HistoryService().GetCupRollOfHonour(gameState);
+
+        Assert.Equal(2, history.Count);
+        Assert.Equal(2026, history[0].Season);
+        Assert.Equal("-", history[0].SerieACupWinner);
+        Assert.Equal("Delta", history[0].MasterCupWinner);
+        Assert.Equal(2025, history[1].Season);
+        Assert.Equal("Aurora", history[1].SerieACupWinner);
+        Assert.Equal("Boreale", history[1].SerieBCupWinner);
+        Assert.Equal("Centrale", history[1].SerieCCupWinner);
+        Assert.Equal("Aurora", history[1].MasterCupWinner);
     }
 
     [Fact]

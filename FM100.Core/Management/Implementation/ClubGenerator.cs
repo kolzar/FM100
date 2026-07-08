@@ -24,8 +24,8 @@ public class ClubGenerator
         "Real Madrid", "Manchester City", "Bayern Monaco", "Liverpool",
         "Paris Saint-Germain", "Inter", "Chelsea", "Borussia Dortmund",
         "Roma", "Barcellona", "Manchester United", "Arsenal",
-        "Benfica", "Atalanta", "Atlético Madrid", "Porto",
-        "RB Lipsia", "Milan", "Siviglia", "Juventus"
+        "Benfica", "Atalanta", "Atlético Madrid", "Juventus",
+        "RB Lipsia", "Milan", "Siviglia", "Porto"
     };
 
     // Serie B clubs (Second tier - 16 clubs)

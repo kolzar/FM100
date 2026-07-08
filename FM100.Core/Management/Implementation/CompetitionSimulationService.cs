@@ -106,6 +106,7 @@ public sealed class CompetitionSimulationService : ICompetitionSimulationService
                 accumulator.AwayWins));
         }
         accumulator.CompletedRounds++;
+        CupCompetitionService.AdvanceCurrentRound(gameState);
 
         foreach (var league in gameState.Leagues.Values.Where(league => league.Season == gameState.CurrentSeason))
         {

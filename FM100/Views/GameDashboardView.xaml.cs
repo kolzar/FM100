@@ -8,6 +8,7 @@ using FM100.Domain.Base.Attribute;
 using FM100.Domain.Club;
 using FM100.Domain.FootballPlayer;
 using FM100.Domain.League;
+using FM100.Domain.Competition;
 
 namespace FM100.Views
 {
@@ -40,6 +41,7 @@ namespace FM100.Views
         private IScoutingService? _scoutingService;
         private IPersonDirectoryService? _personDirectoryService;
         private Division _selectedStandingsDivision = Division.SerieA;
+        private bool _showMasterCup;
 
         public GameDashboardView()
         {
@@ -116,6 +118,7 @@ namespace FM100.Views
             ClubNameText.Text = playerClub.Name;
             SeasonText.Text = _gameState.CurrentSeason.ToString();
             DayText.Text = _gameState.DaysElapsed.ToString();
+            CurrentDateSidebarText.Text = GetCurrentGameDate().ToString("dd/MM/yyyy");
             BudgetText.Text = playerClub.BudgetInMillions.ToString();
             RecordText.Text = $"{playerClub.SeasonWins}-{playerClub.SeasonDraws}-{playerClub.SeasonLosses}";
             GoalDiffText.Text = (playerClub.GoalsFor - playerClub.GoalsAgainst).ToString();
@@ -482,6 +485,17 @@ namespace FM100.Views
         {
             if (_gameState == null) return;
 
+            AllSeriesLabel.Visibility = _showMasterCup ? Visibility.Collapsed : Visibility.Visible;
+            AllSeriesOverview.Visibility = _showMasterCup ? Visibility.Collapsed : Visibility.Visible;
+            DetailedTableLabel.Visibility = _showMasterCup ? Visibility.Collapsed : Visibility.Visible;
+            StandingsList.Visibility = _showMasterCup ? Visibility.Collapsed : Visibility.Visible;
+            if (_showMasterCup)
+            {
+                StandingsTitleText.Text = $"MASTER CUP - SEASON {_gameState.CurrentSeason}";
+                PopulateCupBracket(CupType.MasterCup);
+                return;
+            }
+
             var playerClub = _gameState.GetPlayerClub();
             if (playerClub == null) return;
 
@@ -519,6 +533,12 @@ namespace FM100.Views
                 .ToList();
 
             StandingsList.ItemsSource = standings;
+            PopulateCupBracket(_selectedStandingsDivision switch
+            {
+                Division.SerieA => CupType.SerieACup,
+                Division.SerieB => CupType.SerieBCup,
+                _ => CupType.SerieCCup
+            });
         }
 
         private IReadOnlyList<object> BuildStandingsOverview(Division division)
@@ -553,9 +573,50 @@ namespace FM100.Views
                 Enum.TryParse<Division>(divisionName, out var division))
             {
                 _selectedStandingsDivision = division;
+                _showMasterCup = false;
                 PopulateStandings();
             }
         }
+
+        private void MasterCup_Click(object sender, RoutedEventArgs e)
+        {
+            _showMasterCup = true;
+            PopulateStandings();
+        }
+
+        private void PopulateCupBracket(CupType type)
+        {
+            if (_gameState == null) return;
+            var cup = _gameState.CupCompetitions.Values
+                .Where(item => item.Season == _gameState.CurrentSeason && item.Type == type)
+                .OrderByDescending(item => item.Id)
+                .FirstOrDefault();
+            if (cup == null)
+            {
+                CupBracketTitleText.Text = "CUP NOT AVAILABLE";
+                CupBracketRoundsList.ItemsSource = Array.Empty<object>();
+                return;
+            }
+
+            var champion = cup.ChampionClubId.HasValue
+                ? _gameState.Clubs.GetValueOrDefault(cup.ChampionClubId.Value)?.Name
+                : null;
+            CupBracketTitleText.Text = champion == null ? cup.Name.ToUpperInvariant() : $"{cup.Name.ToUpperInvariant()} - WINNER: {champion}";
+            CupBracketRoundsList.ItemsSource = cup.Fixtures
+                .GroupBy(fixture => new { fixture.RoundNumber, fixture.RoundName })
+                .OrderBy(group => group.Key.RoundNumber)
+                .Select(group => new CupBracketRoundRow(
+                    group.Key.RoundName,
+                    group.Select(fixture => new CupBracketTieRow(
+                        ResolveClubName(fixture.HomeClubId),
+                        fixture.HomeGoals?.ToString() ?? "-",
+                        ResolveClubName(fixture.AwayClubId),
+                        fixture.AwayGoals?.ToString() ?? "-")).ToList()))
+                .ToList();
+        }
+
+        private string ResolveClubName(Guid clubId) =>
+            _gameState?.Clubs.GetValueOrDefault(clubId)?.Name ?? "TBD";
 
         private void PopulateFixtures()
         {
@@ -797,6 +858,14 @@ namespace FM100.Views
             var championCount = rollOfHonour.Sum(entry =>
                 new[] { entry.SerieAChampion, entry.SerieBChampion, entry.SerieCChampion }.Count(name => name != "-"));
             RollOfHonourSummaryText.Text = $"{rollOfHonour.Count}/100 seasons | {championCount} champions";
+
+            var cupRollOfHonour = GetHistoryService().GetCupRollOfHonour(_gameState);
+            CupRollOfHonourList.ItemsSource = cupRollOfHonour.Count == 0
+                ? new List<CupRollOfHonourEntry> { new(0, "-", "-", "-", "-") }
+                : cupRollOfHonour;
+            var cupWinnerCount = cupRollOfHonour.Sum(entry =>
+                new[] { entry.SerieACupWinner, entry.SerieBCupWinner, entry.SerieCCupWinner, entry.MasterCupWinner }.Count(name => name != "-"));
+            CupRollOfHonourSummaryText.Text = $"{cupRollOfHonour.Count}/100 seasons | {cupWinnerCount} cups";
 
             var playerClub = _gameState.GetPlayerClub();
             if (playerClub != null)
@@ -1227,6 +1296,19 @@ namespace FM100.Views
             PopulateSquad();
             PopulateTransfers();
             await SaveCurrentGameStateAsync("Rest day advanced but autosave failed");
+        }
+
+        private async void Continue_Click(object sender, RoutedEventArgs e)
+        {
+            if (_gameState == null)
+            {
+                return;
+            }
+
+            GetGameProgressionService().AdvanceDays(_gameState, 1);
+            RefreshUI();
+            RefreshActiveContent();
+            await SaveCurrentGameStateAsync("Day progression advanced but autosave failed");
         }
 
         private TeamLineup EnsureLineup(Club playerClub, IReadOnlyCollection<FootballPlayer> players)
@@ -2578,9 +2660,61 @@ namespace FM100.Views
 
         private void SetSimulationControlsEnabled(bool isEnabled)
         {
+            ContinueButton.IsEnabled = isEnabled;
             DashboardPlayButton.IsEnabled = isEnabled;
             SimulateSeasonButton.IsEnabled = isEnabled;
             SimulateDecadeButton.IsEnabled = isEnabled;
+        }
+
+        private DateTime GetCurrentGameDate()
+        {
+            if (_gameState == null)
+            {
+                return DateTime.Today;
+            }
+
+            var startDate = _gameState.CreatedAt.Kind == DateTimeKind.Unspecified
+                ? _gameState.CreatedAt.Date
+                : _gameState.CreatedAt.ToLocalTime().Date;
+            return startDate.AddDays(_gameState.DaysElapsed);
+        }
+
+        private void RefreshActiveContent()
+        {
+            if (StandingsContent.Visibility == Visibility.Visible)
+            {
+                PopulateStandings();
+            }
+
+            if (FixturesContent.Visibility == Visibility.Visible)
+            {
+                PopulateFixtures();
+            }
+
+            if (ResultsContent.Visibility == Visibility.Visible)
+            {
+                PopulateResults();
+            }
+
+            if (SquadContent.Visibility == Visibility.Visible)
+            {
+                PopulateSquad();
+            }
+
+            if (TransfersContent.Visibility == Visibility.Visible)
+            {
+                PopulateTransfers();
+            }
+
+            if (SearchContent.Visibility == Visibility.Visible)
+            {
+                PopulatePersonSearch();
+            }
+
+            if (HistoryContent.Visibility == Visibility.Visible)
+            {
+                PopulateHistory();
+            }
         }
 
         private async Task PlayNextFixtureAsync()
@@ -2921,5 +3055,8 @@ namespace FM100.Views
                 // TODO: Navigate back to menu
             }
         }
+
+        private sealed record CupBracketRoundRow(string RoundName, IReadOnlyList<CupBracketTieRow> Ties);
+        private sealed record CupBracketTieRow(string HomeClub, string HomeScore, string AwayClub, string AwayScore);
     }
 }

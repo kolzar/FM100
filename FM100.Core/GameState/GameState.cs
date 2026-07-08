@@ -62,6 +62,8 @@ public class GameState
     /// </summary>
     public Dictionary<Guid, CupCompetition> CupCompetitions { get; set; } = [];
 
+    public List<HistoricalCupRecord> HistoricalCupArchive { get; set; } = [];
+
     /// <summary>
     /// All completed matches for the active game.
     /// </summary>

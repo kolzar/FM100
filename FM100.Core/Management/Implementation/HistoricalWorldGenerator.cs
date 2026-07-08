@@ -1,5 +1,6 @@
 using FM100.Core.GameState;
 using FM100.Domain.Club;
+using FM100.Domain.Competition;
 
 namespace FM100.Core.Management.Implementation;
 
@@ -11,6 +12,7 @@ public sealed class HistoricalWorldGenerator : IHistoricalWorldGenerator
         var yearsToGenerate = Math.Clamp(years, 1, 100);
         if (gameState.HistoricalLeagueTableArchive.Count > 0)
         {
+            EnsureCupHistory(gameState, gameState.HistoricalLeagueTableArchive.Select(record => record.Season).Distinct());
             return new HistoricalWorldGenerationResult(
                 gameState.HistoricalLeagueTableArchive.Select(record => record.Season).Distinct().Count(),
                 gameState.HistoricalLeagueTableArchive.Count,
@@ -60,6 +62,7 @@ public sealed class HistoricalWorldGenerator : IHistoricalWorldGenerator
         gameState.HistoricalStartYear = startYear;
         gameState.HistoricalEndYear = endYear;
         gameState.HistoricalWorldGeneratedAt = DateTime.UtcNow;
+        EnsureCupHistory(gameState, Enumerable.Range(startYear, yearsToGenerate));
         return new HistoricalWorldGenerationResult(
             yearsToGenerate,
             yearsToGenerate * 3,
@@ -165,6 +168,58 @@ public sealed class HistoricalWorldGenerator : IHistoricalWorldGenerator
 
             return hash;
         }
+    }
+
+    private static void EnsureCupHistory(GameState.GameState gameState, IEnumerable<int> seasons)
+    {
+        foreach (var season in seasons.OrderBy(value => value))
+        {
+            AddHistoricalCup(gameState, season, CupType.SerieACup, "Serie A Cup",
+                gameState.HistoricalLeagueTableArchive.FirstOrDefault(table => table.Season == season && table.Division == Division.SerieA)?.Rows.Select(row => row.ClubId));
+            AddHistoricalCup(gameState, season, CupType.SerieBCup, "Serie B Cup",
+                gameState.HistoricalLeagueTableArchive.FirstOrDefault(table => table.Season == season && table.Division == Division.SerieB)?.Rows.Select(row => row.ClubId));
+            AddHistoricalCup(gameState, season, CupType.SerieCCup, "Serie C Cup",
+                gameState.HistoricalLeagueTableArchive.FirstOrDefault(table => table.Season == season && table.Division == Division.SerieC)?.Rows.Select(row => row.ClubId));
+            AddHistoricalCup(gameState, season, CupType.MasterCup, "Master Cup", gameState.Clubs.Keys);
+        }
+    }
+
+    private static void AddHistoricalCup(
+        GameState.GameState gameState,
+        int season,
+        CupType type,
+        string name,
+        IEnumerable<Guid>? participantIds)
+    {
+        if (gameState.HistoricalCupArchive.Any(record => record.Season == season && record.Type == type))
+        {
+            return;
+        }
+
+        var participants = (participantIds ?? [])
+            .Distinct()
+            .Select(id => gameState.Clubs.GetValueOrDefault(id))
+            .Where(club => club != null)
+            .Select(club => club!)
+            .ToList();
+        if (participants.Count == 0)
+        {
+            return;
+        }
+
+        var random = new Random(HashCode.Combine(season, type));
+        var champion = participants
+            .OrderByDescending(club => club.Reputation * 10 + random.Next(0, 101))
+            .ThenBy(club => club.Name)
+            .First();
+        gameState.HistoricalCupArchive.Add(new HistoricalCupRecord
+        {
+            Season = season,
+            Type = type,
+            CompetitionName = name,
+            ChampionClubId = champion.Id,
+            ChampionClubName = champion.Name
+        });
     }
 
     private static string FormatDivision(Division division) => division switch

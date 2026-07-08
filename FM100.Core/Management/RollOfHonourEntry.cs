@@ -5,3 +5,10 @@ public sealed record RollOfHonourEntry(
     string SerieAChampion,
     string SerieBChampion,
     string SerieCChampion);
+
+public sealed record CupRollOfHonourEntry(
+    int Season,
+    string SerieACupWinner,
+    string SerieBCupWinner,
+    string SerieCCupWinner,
+    string MasterCupWinner);

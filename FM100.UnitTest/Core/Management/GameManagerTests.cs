@@ -50,6 +50,7 @@ public class GameManagerTests
         Assert.Equal("3-5-2", playerClub.Formation);
         Assert.Equal(1, gameState.CurrentSeason);
         Assert.Equal(48, gameState.Clubs.Count);
+        Assert.Contains(gameState.Clubs.Values, club => club.Name == "Juventus" && club.Division == Division.SerieA);
         Assert.All(Enum.GetValues<Division>(), division =>
             Assert.Equal(16, gameState.Clubs.Values.Count(club => club.Division == division)));
         Assert.Equal(4, gameState.CupCompetitions.Count);
@@ -64,6 +65,9 @@ public class GameManagerTests
         Assert.Equal(48, masterCup.ClubIds.Distinct().Count());
         Assert.Equal(16, masterCup.ByeClubIds.Count);
         Assert.Equal(16, masterCup.Fixtures.Count);
+        Assert.Equal(400, gameState.HistoricalCupArchive.Count);
+        Assert.Equal(100, gameState.HistoricalCupArchive.Select(record => record.Season).Distinct().Count());
+        Assert.All(gameState.HistoricalCupArchive.GroupBy(record => record.Season), season => Assert.Equal(4, season.Count()));
         Assert.Equal(300, gameState.HistoricalLeagueTableArchive.Count);
         Assert.Equal(100, gameState.HistoricalLeagueTableArchive.Select(record => record.Season).Distinct().Count());
         Assert.Equal(DateTime.UtcNow.Year - 100, gameState.HistoricalStartYear);

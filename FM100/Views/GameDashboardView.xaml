@@ -33,6 +33,13 @@
         <!-- LEFT SIDEBAR - BUTTONS -->
         <Border Grid.Column="0" Background="{DynamicResource SecondaryBackgroundBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,1,0">
             <StackPanel Margin="0" VerticalAlignment="Top">
+                <Border Background="{DynamicResource TertiaryBackgroundBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" Padding="14,12">
+                    <StackPanel>
+                        <TextBlock Text="CURRENT DATE" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource SecondaryTextBrush}" HorizontalAlignment="Center"/>
+                        <TextBlock x:Name="CurrentDateSidebarText" Text="--/--/----" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource AccentBrush}" HorizontalAlignment="Center" Margin="0,4,0,10"/>
+                        <Button x:Name="ContinueButton" Content="▶ CONTINUE" Height="42" Foreground="{DynamicResource InverseTextBrush}" Background="{DynamicResource SuccessBrush}" FontSize="12" FontWeight="Bold" Cursor="Hand" Click="Continue_Click"/>
+                    </StackPanel>
+                </Border>
                 <Button x:Name="DashboardButton" Content="📊 DASHBOARD" Height="50" Foreground="{DynamicResource InverseTextBrush}" Background="{DynamicResource AccentBrush}" FontSize="12" FontWeight="Bold" Cursor="Hand" Click="DashboardBtn_Click" Margin="0"/>
                 <Button x:Name="StandingsButton" Content="🏆 STANDINGS" Height="50" Foreground="{DynamicResource PrimaryTextBrush}" Background="{DynamicResource TertiaryBackgroundBrush}" FontSize="12" FontWeight="Bold" Cursor="Hand" Click="StandingsBtn_Click" Margin="0"/>
                 <Button x:Name="FixturesButton" Content="📅 FIXTURES" Height="50" Foreground="{DynamicResource PrimaryTextBrush}" Background="{DynamicResource TertiaryBackgroundBrush}" FontSize="12" FontWeight="Bold" Cursor="Hand" Click="FixturesBtn_Click" Margin="0"/>
@@ -111,7 +118,6 @@
                                         <Button x:Name="SimulateSeasonButton" Content="SIM SEASON" Height="40" Width="130" Foreground="{DynamicResource InverseTextBrush}" Background="{DynamicResource AccentBrush}" FontSize="12" FontWeight="Bold" Cursor="Hand" Click="SimulateSeason_Click" Margin="0,0,8,0"/>
                                         <Button x:Name="SimulateDecadeButton" Content="SIM 10Y" Height="40" Width="110" Foreground="{DynamicResource PrimaryTextBrush}" Background="{DynamicResource InputBackgroundBrush}" FontSize="12" FontWeight="Bold" Cursor="Hand" Click="SimulateDecade_Click"/>
                                     </StackPanel>
-                                    <Button Grid.Column="3" Content="REST DAY" Height="40" Width="100" HorizontalAlignment="Right" VerticalAlignment="Center" Foreground="{DynamicResource PrimaryTextBrush}" Background="{DynamicResource InputBackgroundBrush}" FontSize="12" FontWeight="Bold" Cursor="Hand" Click="RestDay_Click"/>
                                 </Grid>
                             </Border>
 
@@ -318,14 +324,16 @@
                                     <ColumnDefinition Width="110"/>
                                     <ColumnDefinition Width="110"/>
                                     <ColumnDefinition Width="110"/>
+                                    <ColumnDefinition Width="130"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBlock x:Name="StandingsTitleText" Text="SERIE A - SEASON 1" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center"/>
                                 <Button Grid.Column="1" Content="SERIE A" Tag="SerieA" Click="StandingsDivision_Click" Height="32" Margin="4,0" Foreground="{DynamicResource PrimaryTextBrush}" Background="{DynamicResource InputBackgroundBrush}" FontWeight="Bold" Cursor="Hand"/>
                                 <Button Grid.Column="2" Content="SERIE B" Tag="SerieB" Click="StandingsDivision_Click" Height="32" Margin="4,0" Foreground="{DynamicResource PrimaryTextBrush}" Background="{DynamicResource InputBackgroundBrush}" FontWeight="Bold" Cursor="Hand"/>
                                 <Button Grid.Column="3" Content="SERIE C" Tag="SerieC" Click="StandingsDivision_Click" Height="32" Margin="4,0,0,0" Foreground="{DynamicResource PrimaryTextBrush}" Background="{DynamicResource InputBackgroundBrush}" FontWeight="Bold" Cursor="Hand"/>
+                                <Button Grid.Column="4" Content="MASTER CUP" Click="MasterCup_Click" Height="32" Margin="8,0,0,0" Foreground="{DynamicResource PrimaryTextBrush}" Background="{DynamicResource InputBackgroundBrush}" FontWeight="Bold" Cursor="Hand"/>
                             </Grid>
-                            <TextBlock Text="ALL SERIES" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource SecondaryTextBrush}" Margin="4,0,0,8"/>
-                            <Grid Margin="0,0,0,18">
+                            <TextBlock x:Name="AllSeriesLabel" Text="ALL SERIES" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource SecondaryTextBrush}" Margin="4,0,0,8"/>
+                            <Grid x:Name="AllSeriesOverview" Margin="0,0,0,18">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="*"/>
@@ -350,7 +358,7 @@
                                     </StackPanel>
                                 </Border>
                             </Grid>
-                            <TextBlock Text="DETAILED TABLE" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource SecondaryTextBrush}" Margin="4,0,0,8"/>
+                            <TextBlock x:Name="DetailedTableLabel" Text="DETAILED TABLE" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource SecondaryTextBrush}" Margin="4,0,0,8"/>
                             <Grid Margin="4,0,4,6" Visibility="Collapsed">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="42"/>
@@ -429,6 +437,35 @@
                                     <DataGridTextColumn Header="FORM" Binding="{Binding Form}" Width="96" ElementStyle="{StaticResource CenterStandingsCell}"/>
                                 </DataGrid.Columns>
                             </DataGrid>
+                            <TextBlock x:Name="CupBracketTitleText" Text="SERIE A CUP" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource AccentBrush}" Margin="4,20,0,10"/>
+                            <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                                <ItemsControl x:Name="CupBracketRoundsList">
+                                    <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Width="245" Margin="0,0,12,0">
+                                                <TextBlock Text="{Binding RoundName}" Foreground="{DynamicResource SecondaryTextBrush}" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                                                <ItemsControl ItemsSource="{Binding Ties}">
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <Border Background="{DynamicResource TertiaryBackgroundBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Padding="9" Margin="0,0,0,10" CornerRadius="3">
+                                                                <Grid>
+                                                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="42"/></Grid.ColumnDefinitions>
+                                                                    <Grid.RowDefinitions><RowDefinition Height="24"/><RowDefinition Height="24"/></Grid.RowDefinitions>
+                                                                    <TextBlock Text="{Binding HomeClub}" Foreground="{DynamicResource PrimaryTextBrush}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+                                                                    <TextBlock Grid.Column="1" Text="{Binding HomeScore}" Foreground="{DynamicResource AccentBrush}" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                                    <TextBlock Grid.Row="1" Text="{Binding AwayClub}" Foreground="{DynamicResource PrimaryTextBrush}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+                                                                    <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding AwayScore}" Foreground="{DynamicResource AccentBrush}" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                                </Grid>
+                                                            </Border>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
                         </StackPanel>
                     </Border>
 
@@ -801,6 +838,17 @@
                                     <DataGridTextColumn Header="SERIE A CHAMPION" Binding="{Binding SerieAChampion}" Width="*" MinWidth="220" ElementStyle="{StaticResource HonourCell}"/>
                                     <DataGridTextColumn Header="SERIE B CHAMPION" Binding="{Binding SerieBChampion}" Width="*" MinWidth="220" ElementStyle="{StaticResource HonourCell}"/>
                                     <DataGridTextColumn Header="SERIE C CHAMPION" Binding="{Binding SerieCChampion}" Width="*" MinWidth="220" ElementStyle="{StaticResource HonourCell}"/>
+                                </DataGrid.Columns>
+                            </DataGrid>
+                            <Grid Margin="0,0,0,6"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBlock Text="CUP ALBO D'ORO - 100 YEARS" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource AccentBrush}"/><TextBlock x:Name="CupRollOfHonourSummaryText" Grid.Column="1" Text="0/100 seasons" Foreground="{DynamicResource SecondaryTextBrush}" FontWeight="Bold"/></Grid>
+                            <DataGrid x:Name="CupRollOfHonourList" Style="{StaticResource StandingsDataGridStyle}" AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False" CanUserDeleteRows="False" CanUserResizeRows="False" CanUserReorderColumns="False" CanUserSortColumns="False" HeadersVisibility="Column" GridLinesVisibility="Horizontal" RowHeaderWidth="0" RowHeight="30" ColumnHeaderHeight="32" Height="360" Margin="0,0,0,18">
+                                <DataGrid.Resources><Style x:Key="CupHonourCell" TargetType="TextBlock"><Setter Property="VerticalAlignment" Value="Center"/><Setter Property="HorizontalAlignment" Value="Center"/><Setter Property="FontWeight" Value="SemiBold"/><Setter Property="TextTrimming" Value="CharacterEllipsis"/></Style></DataGrid.Resources>
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="SEASON" Binding="{Binding Season}" Width="90" ElementStyle="{StaticResource CupHonourCell}"/>
+                                    <DataGridTextColumn Header="SERIE A CUP" Binding="{Binding SerieACupWinner}" Width="*" MinWidth="180" ElementStyle="{StaticResource CupHonourCell}"/>
+                                    <DataGridTextColumn Header="SERIE B CUP" Binding="{Binding SerieBCupWinner}" Width="*" MinWidth="180" ElementStyle="{StaticResource CupHonourCell}"/>
+                                    <DataGridTextColumn Header="SERIE C CUP" Binding="{Binding SerieCCupWinner}" Width="*" MinWidth="180" ElementStyle="{StaticResource CupHonourCell}"/>
+                                    <DataGridTextColumn Header="MASTER CUP" Binding="{Binding MasterCupWinner}" Width="*" MinWidth="180" ElementStyle="{StaticResource CupHonourCell}"/>
                                 </DataGrid.Columns>
                             </DataGrid>
                             <TextBlock Text="YOUR CLUB CAREER" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource PrimaryTextBrush}" Margin="0,0,0,6"/>

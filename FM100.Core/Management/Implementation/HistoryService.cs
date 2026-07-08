@@ -140,6 +140,40 @@ public sealed class HistoryService : IHistoryService
             .ToList();
     }
 
+    public IReadOnlyList<CupRollOfHonourEntry> GetCupRollOfHonour(GameState.GameState gameState, int take = 100)
+    {
+        var cupHistory = gameState.HistoricalCupArchive
+            .Select(record => (
+                DisplaySeason: record.Season,
+                Record: record))
+            .Concat(gameState.CupCompetitions.Values
+                .Where(cup => cup.IsComplete && cup.ChampionClubId.HasValue)
+                .Select(cup => (
+                    DisplaySeason: gameState.HistoricalEndYear > 0 ? gameState.HistoricalEndYear + cup.Season : cup.Season,
+                    Record: new Domain.Competition.HistoricalCupRecord
+                    {
+                        Season = cup.Season,
+                        Type = cup.Type,
+                        CompetitionName = cup.Name,
+                        ChampionClubId = cup.ChampionClubId!.Value,
+                        ChampionClubName = gameState.Clubs.GetValueOrDefault(cup.ChampionClubId.Value)?.Name ?? "Unknown Club"
+                    })))
+            .ToList();
+        var seasons = cupHistory.Select(item => item.DisplaySeason)
+            .Distinct()
+            .OrderByDescending(season => season)
+            .Take(Math.Max(0, take));
+
+        return seasons
+            .Select(season => new CupRollOfHonourEntry(
+                season,
+                ResolveCupWinner(cupHistory, season, Domain.Competition.CupType.SerieACup),
+                ResolveCupWinner(cupHistory, season, Domain.Competition.CupType.SerieBCup),
+                ResolveCupWinner(cupHistory, season, Domain.Competition.CupType.SerieCCup),
+                ResolveCupWinner(cupHistory, season, Domain.Competition.CupType.MasterCup)))
+            .ToList();
+    }
+
     private static string ResolveChampion(
         IReadOnlyCollection<(int DisplaySeason, GameState.LeagueTableArchiveRecord Record)> tables,
         IReadOnlyCollection<(int DisplaySeason, GameState.SeasonAwardRecord Award)> awards,
@@ -162,6 +196,17 @@ public sealed class HistoryService : IHistoryService
             .Select(item => item.Award)
             .FirstOrDefault(award => award.AwardKey.Contains(divisionToken, StringComparison.OrdinalIgnoreCase))
             ?.WinnerName ?? "-";
+    }
+
+    private static string ResolveCupWinner(
+        IReadOnlyCollection<(int DisplaySeason, Domain.Competition.HistoricalCupRecord Record)> cupHistory,
+        int season,
+        Domain.Competition.CupType type)
+    {
+        return cupHistory
+            .Where(item => item.DisplaySeason == season && item.Record.Type == type)
+            .Select(item => item.Record.ChampionClubName)
+            .FirstOrDefault() ?? "-";
     }
 
     public IReadOnlyList<ClubSeasonHistoryEntry> GetClubSeasonHistory(
