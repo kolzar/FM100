@@ -11,7 +11,7 @@ using Microsoft.Xna.Framework.Input;
 
 namespace FM100.MonoGame;
 
-internal sealed class Fm100MonoGameApp : Game
+public sealed class Fm100MonoGameApp : Game
 {
     private readonly GraphicsDeviceManager _graphics;
     private SpriteBatch? _spriteBatch;
@@ -37,6 +37,13 @@ internal sealed class Fm100MonoGameApp : Game
     private int _fixtureScrollIndex;
     private int _historyScrollIndex;
     private int _searchScrollIndex;
+    private Guid? _selectedSearchPersonId;
+    private readonly TableState _standingsTableState = new();
+    private readonly TableState _fixturesTableState = new();
+    private readonly TableState _historyLeagueTableState = new();
+    private readonly TableState _historyCupTableState = new();
+    private readonly TableState _searchTableState = new();
+    private readonly TableState _searchDetailTableState = new();
 
     public Fm100MonoGameApp()
     {
@@ -245,27 +252,44 @@ internal sealed class Fm100MonoGameApp : Game
             {
                 _standingsDivisionIndex = (_standingsDivisionIndex + 1) % 3;
             }
+
+            foreach (var division in Enum.GetValues<Division>())
+            {
+                if (WasLeftClicked(GetStandingsDivisionButtonBounds(division), mouse))
+                {
+                    _standingsDivisionIndex = (int)division;
+                }
+            }
+
+            HandleTableSort(GetStandingsTableBounds(), GetStandingsColumns(), _standingsTableState, mouse);
         }
 
         if (_dashboardSection == DashboardSection.Fixtures)
         {
-            var max = Math.Max(0, BuildFixtureRows().Count - 12);
+            var max = Math.Max(0, BuildFixtureTableRows().Count - 14);
             if (WasKeyPressed(Keys.Down, keyboard)) _fixtureScrollIndex = Math.Min(max, _fixtureScrollIndex + 1);
             if (WasKeyPressed(Keys.Up, keyboard)) _fixtureScrollIndex = Math.Max(0, _fixtureScrollIndex - 1);
+            HandleTableSort(GetFixturesTableBounds(), GetFixtureColumns(), _fixturesTableState, mouse);
         }
 
         if (_dashboardSection == DashboardSection.History)
         {
-            var max = Math.Max(0, BuildHistoryLines().Count - 14);
+            var max = Math.Max(0, BuildHistoryCupRows().Count - 6);
             if (WasKeyPressed(Keys.Down, keyboard)) _historyScrollIndex = Math.Min(max, _historyScrollIndex + 1);
             if (WasKeyPressed(Keys.Up, keyboard)) _historyScrollIndex = Math.Max(0, _historyScrollIndex - 1);
+            HandleTableSort(GetHistoryLeagueTableBounds(), GetHistoryLeagueColumns(), _historyLeagueTableState, mouse);
+            HandleTableSort(GetHistoryCupTableBounds(), GetHistoryCupColumns(), _historyCupTableState, mouse);
         }
 
         if (_dashboardSection == DashboardSection.Search)
         {
-            var max = Math.Max(0, BuildSearchRows().Count - 14);
+            var rows = ApplySort(BuildSearchTableRows(), GetSearchColumns(), _searchTableState);
+            var max = Math.Max(0, rows.Count - 10);
             if (WasKeyPressed(Keys.Down, keyboard)) _searchScrollIndex = Math.Min(max, _searchScrollIndex + 1);
             if (WasKeyPressed(Keys.Up, keyboard)) _searchScrollIndex = Math.Max(0, _searchScrollIndex - 1);
+            HandleTableSort(GetSearchTableBounds(), GetSearchColumns(), _searchTableState, mouse);
+            HandleTableSort(GetSearchDetailTableBounds(), GetSearchDetailColumns(), _searchDetailTableState, mouse);
+            HandleSearchSelection(rows, mouse);
         }
 
         var nextFixture = GetNextFixture();
@@ -464,6 +488,17 @@ internal sealed class Fm100MonoGameApp : Game
         _personDirectoryService.EnsureDirectory(_gameState);
         _screen = ScreenId.Dashboard;
         _dashboardSection = DashboardSection.Overview;
+        _standingsDivisionIndex = (int)club.Division;
+        _fixtureScrollIndex = 0;
+        _historyScrollIndex = 0;
+        _searchScrollIndex = 0;
+        _selectedSearchPersonId = null;
+        ResetTableState(_standingsTableState);
+        ResetTableState(_fixturesTableState);
+        ResetTableState(_historyLeagueTableState);
+        ResetTableState(_historyCupTableState);
+        ResetTableState(_searchTableState);
+        ResetTableState(_searchDetailTableState);
         _statusMessage = $"Career started with {club.Name}.";
     }
 
@@ -550,7 +585,20 @@ internal sealed class Fm100MonoGameApp : Game
             .ThenByDescending(club => club.GetGoalDifference())
             .ThenByDescending(club => club.GoalsFor)
             .ThenBy(club => club.Name)
-            .Select((club, index) => new StandingRow(club.Id, index + 1, club.Name, club.GetPoints(), club.GetGoalDifference()))
+            .Select((club, index) => new StandingRow(
+                club.Id,
+                index + 1,
+                club.Name,
+                club.GetPoints(),
+                club.GetMatchesPlayed(),
+                club.SeasonWins,
+                club.SeasonDraws,
+                club.SeasonLosses,
+                club.GoalsFor,
+                club.GoalsAgainst,
+                club.GetGoalDifference(),
+                club.GetGoalDifference() > 0 ? $"+{club.GetGoalDifference()}" : club.GetGoalDifference().ToString(),
+                BuildClubForm(club)))
             .ToList();
     }
 
@@ -625,7 +673,40 @@ internal sealed class Fm100MonoGameApp : Game
 
     private Rectangle GetMenuButtonBounds(int index) => new(90, 230 + index * 96, 360, 72);
 
-    private Rectangle GetSidebarSectionBounds(DashboardSection section) => new(24, 344 + (int)section * 52, 192, 40);
+    private Rectangle GetSidebarBounds() => new(0, 0, 240, GraphicsDevice.Viewport.Height);
+
+    private Rectangle GetContentBounds()
+    {
+        var sidebar = GetSidebarBounds();
+        var left = sidebar.Right + 40;
+        var top = 48;
+        var rightMargin = 40;
+        var bottomMargin = 80;
+        return new Rectangle(
+            left,
+            top,
+            Math.Max(960, GraphicsDevice.Viewport.Width - left - rightMargin),
+            Math.Max(720, GraphicsDevice.Viewport.Height - top - bottomMargin));
+    }
+
+    private Rectangle GetHeaderBounds()
+    {
+        var content = GetContentBounds();
+        return new Rectangle(content.X, content.Y, content.Width, 140);
+    }
+
+    private Rectangle GetSectionBounds()
+    {
+        var content = GetContentBounds();
+        var header = GetHeaderBounds();
+        return new Rectangle(content.X, header.Bottom + 32, content.Width, Math.Max(420, content.Bottom - header.Bottom - 32));
+    }
+
+    private Rectangle GetSidebarSectionBounds(DashboardSection section)
+    {
+        var sidebar = GetSidebarBounds();
+        return new Rectangle(sidebar.X + 24, sidebar.Y + 344 + (int)section * 52, sidebar.Width - 48, 40);
+    }
 
     private Rectangle GetDivisionTabBounds(Division division)
     {
@@ -635,9 +716,114 @@ internal sealed class Fm100MonoGameApp : Game
 
     private Rectangle GetClubRowBounds(int index) => new(110, 208 + index * 34, 560, 28);
 
-    private Rectangle GetContinueButtonBounds() => new(316, 470, 240, 56);
+    private Rectangle GetStandingsDivisionButtonBounds(Division division)
+    {
+        var section = GetSectionBounds();
+        var width = 140;
+        var gap = 12;
+        var index = (int)division;
+        return new Rectangle(section.Right - ((3 - index) * (width + gap)) + gap, section.Y + 26, width, 36);
+    }
 
-    private Rectangle GetPlayMatchButtonBounds() => new(590, 470, 240, 56);
+    private Rectangle GetStandingsOverviewAreaBounds()
+    {
+        var section = GetSectionBounds();
+        return new Rectangle(section.X + 36, section.Y + 84, section.Width - 72, 250);
+    }
+
+    private Rectangle GetStandingsOverviewPanelBounds(Division division)
+    {
+        var area = GetStandingsOverviewAreaBounds();
+        var gap = 16;
+        var width = (area.Width - (gap * 2)) / 3;
+        return new Rectangle(area.X + (int)division * (width + gap), area.Y, width, area.Height);
+    }
+
+    private Rectangle GetStandingsTableBounds()
+    {
+        var section = GetSectionBounds();
+        var overview = GetStandingsOverviewAreaBounds();
+        return new Rectangle(section.X + 36, overview.Bottom + 64, section.Width - 72, section.Bottom - overview.Bottom - 100);
+    }
+
+    private Rectangle GetFixturesTableBounds()
+    {
+        var section = GetSectionBounds();
+        return new Rectangle(section.X + 36, section.Y + 72, section.Width - 72, section.Height - 108);
+    }
+
+    private Rectangle GetHistoryLeagueTableBounds()
+    {
+        var section = GetSectionBounds();
+        var gap = 24;
+        var availableHeight = section.Height - 108;
+        var tableHeight = Math.Max(180, (availableHeight - gap) / 2);
+        return new Rectangle(section.X + 36, section.Y + 72, section.Width - 72, tableHeight);
+    }
+
+    private Rectangle GetHistoryCupTableBounds()
+    {
+        var topTable = GetHistoryLeagueTableBounds();
+        var section = GetSectionBounds();
+        var y = topTable.Bottom + 24;
+        var height = Math.Max(180, section.Bottom - y - 36);
+        return new Rectangle(section.X + 36, y, section.Width - 72, height);
+    }
+
+    private Rectangle GetSearchTableBounds()
+    {
+        var section = GetSectionBounds();
+        return new Rectangle(section.X + 36, section.Y + 72, section.Width - 72, 320);
+    }
+
+    private Rectangle GetSearchDetailHeaderBounds()
+    {
+        var table = GetSearchTableBounds();
+        return new Rectangle(table.X, table.Bottom + 18, table.Width, 56);
+    }
+
+    private Rectangle GetSearchDetailTableBounds()
+    {
+        var header = GetSearchDetailHeaderBounds();
+        var section = GetSectionBounds();
+        return new Rectangle(header.X, header.Bottom + 12, header.Width, Math.Max(180, section.Bottom - header.Bottom - 24));
+    }
+
+    private Rectangle GetOverviewLeftBounds()
+    {
+        var section = GetSectionBounds();
+        var gap = 32;
+        var leftWidth = Math.Max(420, (section.Width - gap) / 2);
+        return new Rectangle(section.X, section.Y, leftWidth, section.Height);
+    }
+
+    private Rectangle GetOverviewRightTopBounds()
+    {
+        var left = GetOverviewLeftBounds();
+        var section = GetSectionBounds();
+        var rightX = left.Right + 32;
+        var rightWidth = Math.Max(360, section.Right - rightX);
+        return new Rectangle(rightX, section.Y, rightWidth, Math.Max(220, (section.Height - 30) / 2));
+    }
+
+    private Rectangle GetOverviewRightBottomBounds()
+    {
+        var top = GetOverviewRightTopBounds();
+        var section = GetSectionBounds();
+        return new Rectangle(top.X, top.Bottom + 30, top.Width, Math.Max(220, section.Bottom - top.Bottom - 30));
+    }
+
+    private Rectangle GetContinueButtonBounds()
+    {
+        var left = GetOverviewLeftBounds();
+        return new Rectangle(left.X + 36, left.Y + Math.Min(left.Height - 96, 250), 240, 56);
+    }
+
+    private Rectangle GetPlayMatchButtonBounds()
+    {
+        var continueButton = GetContinueButtonBounds();
+        return new Rectangle(continueButton.Right + 28, continueButton.Y, 240, 56);
+    }
 
     private bool WasKeyPressed(Keys key, KeyboardState currentState) =>
         currentState.IsKeyDown(key) && !_previousKeyboardState.IsKeyDown(key);
@@ -653,6 +839,15 @@ internal sealed class Fm100MonoGameApp : Game
         Division.SerieB => "Serie B",
         _ => "Serie C"
     };
+
+    private int ResolveMatchWeek(Guid fixtureId) =>
+        _gameState?.Fixtures.GetValueOrDefault(fixtureId)?.MatchWeek ?? 0;
+
+    private static void ResetTableState(TableState state)
+    {
+        state.SortColumnIndex = 0;
+        state.Direction = TableSortDirection.Ascending;
+    }
 
     private enum ScreenId
     {
@@ -670,19 +865,37 @@ internal sealed class Fm100MonoGameApp : Game
         Search
     }
 
-    private sealed record StandingRow(Guid ClubId, int Position, string Name, int Points, int GoalDifference);
+    private sealed record StandingRow(
+        Guid ClubId,
+        int Position,
+        string Name,
+        int Points,
+        int Played,
+        int Wins,
+        int Draws,
+        int Losses,
+        int GoalsFor,
+        int GoalsAgainst,
+        int GoalDifference,
+        string GoalDifferenceText,
+        string Form);
 
     private void DrawDashboardHeader(Club playerClub, MatchdayStatus matchdayStatus)
     {
-        DrawPanel(new Rectangle(280, 48, 1280, 140), new Color(22, 27, 34));
-        _text!.DrawText(_spriteBatch!, $"{playerClub.Name}  |  Season {_gameState!.CurrentSeason}", new Vector2(320, 80), Color.White, 30, true);
-        _text.DrawText(_spriteBatch!, matchdayStatus.NoticeText, new Vector2(320, 128), matchdayStatus.IsMatchDay ? new Color(94, 203, 144) : new Color(109, 158, 235), 22, true);
+        var header = GetHeaderBounds();
+        DrawPanel(header, new Color(22, 27, 34));
+        _text!.DrawText(_spriteBatch!, $"{playerClub.Name}  |  Season {_gameState!.CurrentSeason}", new Vector2(header.X + 40, header.Y + 32), Color.White, 30, true);
+        _text.DrawText(_spriteBatch!, matchdayStatus.NoticeText, new Vector2(header.X + 40, header.Y + 80), matchdayStatus.IsMatchDay ? new Color(94, 203, 144) : new Color(109, 158, 235), 22, true);
     }
 
     private void DrawOverview(Club playerClub, Fixture? nextFixture, MatchdayStatus matchdayStatus)
     {
-        DrawPanel(new Rectangle(280, 220, 620, 620), new Color(22, 27, 34));
-        _text!.DrawText(_spriteBatch!, "NEXT MATCH", new Vector2(316, 252), Color.White, 24, true);
+        var left = GetOverviewLeftBounds();
+        var topRight = GetOverviewRightTopBounds();
+        var bottomRight = GetOverviewRightBottomBounds();
+
+        DrawPanel(left, new Color(22, 27, 34));
+        _text!.DrawText(_spriteBatch!, "NEXT MATCH", new Vector2(left.X + 36, left.Y + 32), Color.White, 24, true);
         _text.DrawMultilineText(
             _spriteBatch!,
             [
@@ -692,7 +905,7 @@ internal sealed class Fm100MonoGameApp : Game
                 $"Budget: EUR {playerClub.BudgetInMillions}M",
                 ""
             ],
-            new Vector2(316, 300),
+            new Vector2(left.X + 36, left.Y + 80),
             new Color(220, 226, 236),
             18,
             8);
@@ -709,7 +922,7 @@ internal sealed class Fm100MonoGameApp : Game
                     nextFixture.ScheduledDate.ToLocalTime().ToString("dd/MM/yyyy"),
                     matchdayStatus.IsMatchDay ? "Ready to play now" : $"Available in {matchdayStatus.DaysUntilNextFixture} day(s)"
                 ],
-                new Vector2(316, 430),
+                new Vector2(left.X + 36, left.Y + 210),
                 Color.White,
                 22,
                 12);
@@ -718,70 +931,410 @@ internal sealed class Fm100MonoGameApp : Game
         DrawButton(GetContinueButtonBounds(), matchdayStatus.ContinueLabel, matchdayStatus.IsMatchDay ? new Color(42, 111, 196) : new Color(44, 145, 94));
         DrawButton(GetPlayMatchButtonBounds(), "PLAY MATCH", matchdayStatus.IsMatchDay ? new Color(44, 145, 94) : new Color(70, 74, 82));
 
-        DrawPanel(new Rectangle(940, 220, 620, 290), new Color(22, 27, 34));
-        _text.DrawText(_spriteBatch!, "STANDINGS SNAPSHOT", new Vector2(976, 252), Color.White, 24, true);
+        DrawPanel(topRight, new Color(22, 27, 34));
+        _text.DrawText(_spriteBatch!, "STANDINGS SNAPSHOT", new Vector2(topRight.X + 36, topRight.Y + 32), Color.White, 24, true);
         var standings = BuildStandings(playerClub.Division).Take(10).ToList();
         for (var index = 0; index < standings.Count; index++)
         {
             var row = standings[index];
-            var y = 300 + index * 22;
+            var y = topRight.Y + 80 + index * 22;
             var highlight = row.ClubId == playerClub.Id ? new Color(94, 203, 144) : Color.White;
-            _text.DrawText(_spriteBatch!, $"{row.Position,2}. {row.Name,-20} {row.Points,3} pts  GD {row.GoalDifference,3}", new Vector2(976, y), highlight, 18, row.ClubId == playerClub.Id);
+            _text.DrawText(_spriteBatch!, $"{row.Position,2}. {row.Name,-20} {row.Points,3} pts  GD {row.GoalDifference,3}", new Vector2(topRight.X + 36, y), highlight, 18, row.ClubId == playerClub.Id);
         }
 
-        DrawPanel(new Rectangle(940, 540, 620, 300), new Color(22, 27, 34));
-        _text.DrawText(_spriteBatch!, "MATCH COMMENTARY", new Vector2(976, 572), Color.White, 24, true);
+        DrawPanel(bottomRight, new Color(22, 27, 34));
+        _text.DrawText(_spriteBatch!, "MATCH COMMENTARY", new Vector2(bottomRight.X + 36, bottomRight.Y + 32), Color.White, 24, true);
         var lines = GetLatestCommentaryLines();
-        _text.DrawMultilineText(_spriteBatch!, lines, new Vector2(976, 620), new Color(220, 226, 236), 17, 10);
+        _text.DrawMultilineText(_spriteBatch!, lines, new Vector2(bottomRight.X + 36, bottomRight.Y + 80), new Color(220, 226, 236), 17, 10);
     }
 
     private void DrawStandingsSection(Club playerClub)
     {
         var division = (Division)_standingsDivisionIndex;
-        DrawPanel(new Rectangle(280, 220, 1280, 620), new Color(22, 27, 34));
-        _text!.DrawText(_spriteBatch!, $"FULL STANDINGS - {FormatDivision(division)}", new Vector2(316, 252), Color.White, 24, true);
-        _text.DrawText(_spriteBatch!, "Left/Right to switch division", new Vector2(1230, 252), new Color(160, 170, 184), 16);
-        var standings = BuildStandings(division);
-        for (var index = 0; index < standings.Count; index++)
-        {
-            var row = standings[index];
-            var y = 300 + index * 28;
-            var highlight = row.ClubId == playerClub.Id ? new Color(94, 203, 144) : Color.White;
-            _text.DrawText(_spriteBatch!, $"{row.Position,2}. {row.Name,-22} {row.Points,3} pts  GD {row.GoalDifference,3}", new Vector2(316, y), highlight, 20, row.ClubId == playerClub.Id);
-        }
+        var section = GetSectionBounds();
+        DrawPanel(section, new Color(22, 27, 34));
+        _text!.DrawText(_spriteBatch!, $"FULL STANDINGS - {FormatDivision(division)}", new Vector2(section.X + 36, section.Y + 32), Color.White, 24, true);
+        _text.DrawText(_spriteBatch!, "Left/Right to switch division | Click headers to sort", new Vector2(section.X + 36, section.Y + 58), new Color(160, 170, 184), 16);
+        DrawStandingsDivisionButtons(division);
+        DrawStandingsOverviewCards(playerClub);
+        var sortedRows = ApplySort(BuildStandings(division), GetStandingsColumns(), _standingsTableState);
+        DrawTable(
+            GetStandingsTableBounds(),
+            sortedRows,
+            GetStandingsColumns(),
+            _standingsTableState,
+            row => row.ClubId == playerClub.Id ? new Color(94, 203, 144) : Color.White,
+            rowHeight: 28,
+            title: "Detailed Table");
     }
 
     private void DrawFixturesSection()
     {
-        DrawPanel(new Rectangle(280, 220, 1280, 620), new Color(22, 27, 34));
-        _text!.DrawText(_spriteBatch!, "FIXTURES AND RESULTS", new Vector2(316, 252), Color.White, 24, true);
-        _text.DrawText(_spriteBatch!, "Up/Down to scroll", new Vector2(1370, 252), new Color(160, 170, 184), 16);
-        var rows = BuildFixtureRows().Skip(_fixtureScrollIndex).Take(18).ToList();
-        for (var index = 0; index < rows.Count; index++)
-        {
-            _text.DrawText(_spriteBatch!, rows[index], new Vector2(316, 302 + index * 26), Color.White, 18);
-        }
+        var section = GetSectionBounds();
+        DrawPanel(section, new Color(22, 27, 34));
+        _text!.DrawText(_spriteBatch!, "FIXTURES AND RESULTS", new Vector2(section.X + 36, section.Y + 32), Color.White, 24, true);
+        _text.DrawText(_spriteBatch!, "Up/Down to scroll | Click headers to sort", new Vector2(section.Right - 390, section.Y + 34), new Color(160, 170, 184), 16);
+        var rows = ApplySort(BuildFixtureTableRows(), GetFixtureColumns(), _fixturesTableState);
+        DrawTable(
+            GetFixturesTableBounds(),
+            rows,
+            GetFixtureColumns(),
+            _fixturesTableState,
+            row => row.IsPlayed ? new Color(220, 226, 236) : new Color(109, 158, 235),
+            rowHeight: 28,
+            scrollIndex: _fixtureScrollIndex);
     }
 
     private void DrawHistorySection()
     {
-        DrawPanel(new Rectangle(280, 220, 1280, 620), new Color(22, 27, 34));
-        _text!.DrawText(_spriteBatch!, "100-YEAR HISTORY", new Vector2(316, 252), Color.White, 24, true);
-        _text.DrawText(_spriteBatch!, "Up/Down to scroll", new Vector2(1370, 252), new Color(160, 170, 184), 16);
-        var lines = BuildHistoryLines().Skip(_historyScrollIndex).Take(18).ToList();
-        _text.DrawMultilineText(_spriteBatch!, lines, new Vector2(316, 300), new Color(220, 226, 236), 18, 12);
+        var section = GetSectionBounds();
+        DrawPanel(section, new Color(22, 27, 34));
+        _text!.DrawText(_spriteBatch!, "100-YEAR HISTORY", new Vector2(section.X + 36, section.Y + 32), Color.White, 24, true);
+        _text.DrawText(_spriteBatch!, "Scroll with Up/Down | Click headers to sort", new Vector2(section.Right - 400, section.Y + 34), new Color(160, 170, 184), 16);
+        var leagueRows = ApplySort(BuildHistoryLeagueRows(), GetHistoryLeagueColumns(), _historyLeagueTableState);
+        var cupRows = ApplySort(BuildHistoryCupRows(), GetHistoryCupColumns(), _historyCupTableState);
+        DrawTable(
+            GetHistoryLeagueTableBounds(),
+            leagueRows,
+            GetHistoryLeagueColumns(),
+            _historyLeagueTableState,
+            _ => new Color(220, 226, 236),
+            rowHeight: 28,
+            title: "League Roll Of Honour");
+        DrawTable(
+            GetHistoryCupTableBounds(),
+            cupRows,
+            GetHistoryCupColumns(),
+            _historyCupTableState,
+            _ => new Color(220, 226, 236),
+            rowHeight: 28,
+            title: "Cup Roll Of Honour",
+            scrollIndex: _historyScrollIndex / 2);
     }
 
     private void DrawSearchSection()
     {
-        DrawPanel(new Rectangle(280, 220, 1280, 620), new Color(22, 27, 34));
-        _text!.DrawText(_spriteBatch!, "PERSON SEARCH", new Vector2(316, 252), Color.White, 24, true);
-        _text.DrawText(_spriteBatch!, "Directory preview - Up/Down to scroll", new Vector2(1180, 252), new Color(160, 170, 184), 16);
-        var rows = BuildSearchRows().Skip(_searchScrollIndex).Take(18).ToList();
-        for (var index = 0; index < rows.Count; index++)
+        var section = GetSectionBounds();
+        DrawPanel(section, new Color(22, 27, 34));
+        _text!.DrawText(_spriteBatch!, "PERSON SEARCH", new Vector2(section.X + 36, section.Y + 32), Color.White, 24, true);
+        _text.DrawText(_spriteBatch!, "Directory preview | Click headers to sort", new Vector2(section.Right - 380, section.Y + 34), new Color(160, 170, 184), 16);
+        var rows = ApplySort(BuildSearchTableRows(), GetSearchColumns(), _searchTableState);
+        DrawTable(
+            GetSearchTableBounds(),
+            rows,
+            GetSearchColumns(),
+            _searchTableState,
+            row => row.PersonId == _selectedSearchPersonId ? new Color(94, 203, 144) : new Color(220, 226, 236),
+            rowHeight: 28,
+            scrollIndex: _searchScrollIndex);
+        DrawSearchDetail();
+    }
+
+    private List<FixtureTableRow> BuildFixtureTableRows()
+    {
+        if (_gameState == null)
         {
-            _text.DrawText(_spriteBatch!, rows[index], new Vector2(316, 302 + index * 26), Color.White, 16);
+            return [];
         }
+
+        var upcoming = GetActiveFixtures()
+            .Where(fixture => !fixture.IsPlayed)
+            .OrderBy(fixture => fixture.ScheduledDate)
+            .Select(fixture => new FixtureTableRow(
+                "Upcoming",
+                fixture.ScheduledDate.ToLocalTime().ToString("dd/MM"),
+                fixture.MatchWeek,
+                GetClubName(fixture.HomeClubId),
+                "-",
+                GetClubName(fixture.AwayClubId),
+                false));
+        var results = _gameState.Matches.Values
+            .OrderByDescending(match => match.PlayedAt)
+            .Select(match => new FixtureTableRow(
+                "Result",
+                match.PlayedAt.ToLocalTime().ToString("dd/MM"),
+                ResolveMatchWeek(match.FixtureId),
+                GetClubName(match.HomeClubId),
+                $"{match.HomeGoals}-{match.AwayGoals}",
+                GetClubName(match.AwayClubId),
+                true));
+        return upcoming.Concat(results).ToList();
+    }
+
+    private List<HistoryLeagueRow> BuildHistoryLeagueRows()
+    {
+        return _gameState == null
+            ? []
+            : _historyService.GetRollOfHonour(_gameState)
+                .Select(entry => new HistoryLeagueRow(entry.Season, entry.SerieAChampion, entry.SerieBChampion, entry.SerieCChampion))
+                .ToList();
+    }
+
+    private List<HistoryCupRow> BuildHistoryCupRows()
+    {
+        return _gameState == null
+            ? []
+            : _historyService.GetCupRollOfHonour(_gameState)
+                .Select(entry => new HistoryCupRow(entry.Season, entry.SerieACupWinner, entry.SerieBCupWinner, entry.SerieCCupWinner, entry.MasterCupWinner))
+                .ToList();
+    }
+
+    private List<SearchTableRow> BuildSearchTableRows()
+    {
+        if (_gameState == null)
+        {
+            return [];
+        }
+
+        return _personDirectoryService.Search(_gameState, category: PersonCategory.All, take: 80)
+            .Select(entry => new SearchTableRow(
+                entry.PersonId,
+                entry.PersonType,
+                entry.FullName,
+                entry.Role,
+                entry.ClubName,
+                entry.Age,
+                entry.Nationality,
+                entry.Reputation,
+                entry.Status))
+            .ToList();
+    }
+
+    private static string BuildClubForm(Club club)
+    {
+        var form = new List<string>();
+        form.AddRange(Enumerable.Repeat("W", Math.Min(5, club.SeasonWins)));
+        form.AddRange(Enumerable.Repeat("D", Math.Max(0, Math.Min(5 - form.Count, club.SeasonDraws))));
+        form.AddRange(Enumerable.Repeat("L", Math.Max(0, Math.Min(5 - form.Count, club.SeasonLosses))));
+        return form.Count == 0 ? "-" : string.Join(' ', form.Take(5));
+    }
+
+    private IReadOnlyList<TableColumn<StandingRow>> GetStandingsColumns() =>
+    [
+        new TableColumn<StandingRow>("POS", 90, row => row.Position.ToString(), row => row.Position),
+        new TableColumn<StandingRow>("CLUB", 280, row => row.Name, row => row.Name),
+        new TableColumn<StandingRow>("PTS", 70, row => row.Points.ToString(), row => row.Points),
+        new TableColumn<StandingRow>("P", 60, row => row.Played.ToString(), row => row.Played),
+        new TableColumn<StandingRow>("W", 60, row => row.Wins.ToString(), row => row.Wins),
+        new TableColumn<StandingRow>("D", 60, row => row.Draws.ToString(), row => row.Draws),
+        new TableColumn<StandingRow>("L", 60, row => row.Losses.ToString(), row => row.Losses),
+        new TableColumn<StandingRow>("GF", 70, row => row.GoalsFor.ToString(), row => row.GoalsFor),
+        new TableColumn<StandingRow>("GA", 70, row => row.GoalsAgainst.ToString(), row => row.GoalsAgainst),
+        new TableColumn<StandingRow>("GD", 70, row => row.GoalDifferenceText, row => row.GoalDifference),
+        new TableColumn<StandingRow>("FORM", 120, row => row.Form, row => row.Form)
+    ];
+
+    private IReadOnlyList<TableColumn<FixtureTableRow>> GetFixtureColumns() =>
+    [
+        new TableColumn<FixtureTableRow>("TYPE", 140, row => row.Type, row => row.Type),
+        new TableColumn<FixtureTableRow>("DATE", 120, row => row.DateText, row => row.DateText),
+        new TableColumn<FixtureTableRow>("WEEK", 120, row => row.MatchWeek.ToString(), row => row.MatchWeek),
+        new TableColumn<FixtureTableRow>("HOME", 320, row => row.HomeClub, row => row.HomeClub),
+        new TableColumn<FixtureTableRow>("SCORE", 120, row => row.Score, row => row.Score),
+        new TableColumn<FixtureTableRow>("AWAY", 320, row => row.AwayClub, row => row.AwayClub)
+    ];
+
+    private IReadOnlyList<TableColumn<HistoryLeagueRow>> GetHistoryLeagueColumns() =>
+    [
+        new TableColumn<HistoryLeagueRow>("SEASON", 120, row => row.Season.ToString(), row => row.Season),
+        new TableColumn<HistoryLeagueRow>("SERIE A", 260, row => row.SerieAChampion, row => row.SerieAChampion),
+        new TableColumn<HistoryLeagueRow>("SERIE B", 260, row => row.SerieBChampion, row => row.SerieBChampion),
+        new TableColumn<HistoryLeagueRow>("SERIE C", 260, row => row.SerieCChampion, row => row.SerieCChampion)
+    ];
+
+    private IReadOnlyList<TableColumn<HistoryCupRow>> GetHistoryCupColumns() =>
+    [
+        new TableColumn<HistoryCupRow>("SEASON", 120, row => row.Season.ToString(), row => row.Season),
+        new TableColumn<HistoryCupRow>("A CUP", 210, row => row.SerieACupWinner, row => row.SerieACupWinner),
+        new TableColumn<HistoryCupRow>("B CUP", 210, row => row.SerieBCupWinner, row => row.SerieBCupWinner),
+        new TableColumn<HistoryCupRow>("C CUP", 210, row => row.SerieCCupWinner, row => row.SerieCCupWinner),
+        new TableColumn<HistoryCupRow>("MASTER", 220, row => row.MasterCupWinner, row => row.MasterCupWinner)
+    ];
+
+    private IReadOnlyList<TableColumn<SearchTableRow>> GetSearchColumns() =>
+    [
+        new TableColumn<SearchTableRow>("TYPE", 120, row => row.Type, row => row.Type),
+        new TableColumn<SearchTableRow>("NAME", 250, row => row.Name, row => row.Name),
+        new TableColumn<SearchTableRow>("ROLE", 240, row => row.Role, row => row.Role),
+        new TableColumn<SearchTableRow>("CLUB", 220, row => row.Club, row => row.Club),
+        new TableColumn<SearchTableRow>("AGE", 90, row => row.Age.ToString(), row => row.Age),
+        new TableColumn<SearchTableRow>("NAT", 120, row => row.Nationality, row => row.Nationality),
+        new TableColumn<SearchTableRow>("REP", 90, row => row.Reputation.ToString(), row => row.Reputation),
+        new TableColumn<SearchTableRow>("STATUS", 170, row => row.Status, row => row.Status)
+    ];
+
+    private IReadOnlyList<TableColumn<PersonPropertyEntry>> GetSearchDetailColumns() =>
+    [
+        new TableColumn<PersonPropertyEntry>("GROUP", 220, row => row.Group, row => row.Group),
+        new TableColumn<PersonPropertyEntry>("PROPERTY", 340, row => row.Name, row => row.Name),
+        new TableColumn<PersonPropertyEntry>("VALUE", 420, row => row.Value, row => row.Value)
+    ];
+
+    private IReadOnlyList<T> ApplySort<T>(IReadOnlyList<T> rows, IReadOnlyList<TableColumn<T>> columns, TableState state)
+    {
+        if (rows.Count == 0 || columns.Count == 0)
+        {
+            return rows;
+        }
+
+        var columnIndex = Math.Clamp(state.SortColumnIndex, 0, columns.Count - 1);
+        return TableSortService.Sort(rows, columns[columnIndex].SortValue, state.Direction);
+    }
+
+    private void HandleTableSort<T>(Rectangle bounds, IReadOnlyList<TableColumn<T>> columns, TableState state, MouseState mouse)
+    {
+        var x = bounds.X;
+        for (var index = 0; index < columns.Count; index++)
+        {
+            var headerBounds = new Rectangle(x, bounds.Y, columns[index].Width, 34);
+            if (WasLeftClicked(headerBounds, mouse))
+            {
+                if (state.SortColumnIndex == index)
+                {
+                    state.Direction = state.Direction == TableSortDirection.Ascending
+                        ? TableSortDirection.Descending
+                        : TableSortDirection.Ascending;
+                }
+                else
+                {
+                    state.SortColumnIndex = index;
+                    state.Direction = TableSortDirection.Ascending;
+                }
+            }
+
+            x += columns[index].Width;
+        }
+    }
+
+    private void DrawTable<T>(
+        Rectangle bounds,
+        IReadOnlyList<T> rows,
+        IReadOnlyList<TableColumn<T>> columns,
+        TableState state,
+        Func<T, Color> rowColorSelector,
+        int rowHeight,
+        string? title = null,
+        int scrollIndex = 0)
+    {
+        DrawPanel(bounds, new Color(22, 27, 34));
+        if (!string.IsNullOrWhiteSpace(title))
+        {
+            _text!.DrawText(_spriteBatch!, title, new Vector2(bounds.X + 18, bounds.Y + 12), Color.White, 20, true);
+        }
+
+        var headerY = string.IsNullOrWhiteSpace(title) ? bounds.Y : bounds.Y + 40;
+        var x = bounds.X;
+        for (var index = 0; index < columns.Count; index++)
+        {
+            var selected = state.SortColumnIndex == index;
+            var headerBounds = new Rectangle(x, headerY, columns[index].Width, 34);
+            DrawPanel(headerBounds, selected ? new Color(42, 111, 196) : new Color(32, 39, 50));
+            var directionText = selected ? (state.Direction == TableSortDirection.Ascending ? " ^" : " v") : string.Empty;
+            _text!.DrawText(_spriteBatch!, columns[index].Header + directionText, new Vector2(x + 10, headerY + 8), Color.White, 16, true);
+            x += columns[index].Width;
+        }
+
+        var visibleRows = rows.Skip(scrollIndex).Take(Math.Max(1, (bounds.Height - (headerY - bounds.Y) - 42) / rowHeight)).ToList();
+        for (var rowIndex = 0; rowIndex < visibleRows.Count; rowIndex++)
+        {
+            var row = visibleRows[rowIndex];
+            var rowY = headerY + 40 + rowIndex * rowHeight;
+            var rowBounds = new Rectangle(bounds.X, rowY, bounds.Width, rowHeight - 2);
+            DrawPanel(rowBounds, rowIndex % 2 == 0 ? new Color(26, 32, 40) : new Color(21, 26, 33));
+            var textColor = rowColorSelector(row);
+            x = bounds.X;
+            for (var columnIndex = 0; columnIndex < columns.Count; columnIndex++)
+            {
+                _text!.DrawText(_spriteBatch!, columns[columnIndex].DisplayValue(row), new Vector2(x + 10, rowY + 6), textColor, 15);
+                x += columns[columnIndex].Width;
+            }
+        }
+    }
+
+    private void DrawStandingsDivisionButtons(Division selectedDivision)
+    {
+        foreach (var division in Enum.GetValues<Division>())
+        {
+            var bounds = GetStandingsDivisionButtonBounds(division);
+            DrawPanel(bounds, division == selectedDivision ? new Color(42, 111, 196) : new Color(32, 39, 50));
+            _text!.DrawText(_spriteBatch!, FormatDivision(division).ToUpperInvariant(), new Vector2(bounds.X + 16, bounds.Y + 10), Color.White, 16, true);
+        }
+    }
+
+    private IReadOnlyList<TableColumn<StandingRow>> GetStandingsOverviewColumns() =>
+    [
+        new TableColumn<StandingRow>("#", 44, row => row.Position.ToString(), row => row.Position),
+        new TableColumn<StandingRow>("CLUB", 190, row => row.Name, row => row.Name),
+        new TableColumn<StandingRow>("PTS", 54, row => row.Points.ToString(), row => row.Points)
+    ];
+
+    private void DrawStandingsOverviewCards(Club playerClub)
+    {
+        foreach (var division in Enum.GetValues<Division>())
+        {
+            var panel = GetStandingsOverviewPanelBounds(division);
+            DrawPanel(panel, new Color(20, 24, 31));
+            _text!.DrawText(_spriteBatch!, FormatDivision(division).ToUpperInvariant(), new Vector2(panel.X + 16, panel.Y + 14), division == playerClub.Division ? new Color(94, 203, 144) : Color.White, 17, true);
+            DrawTable(
+                new Rectangle(panel.X + 10, panel.Y + 42, panel.Width - 20, panel.Height - 52),
+                BuildStandings(division).Take(8).ToList(),
+                GetStandingsOverviewColumns(),
+                new TableState(),
+                row => row.ClubId == playerClub.Id ? new Color(94, 203, 144) : new Color(220, 226, 236),
+                rowHeight: 24);
+        }
+    }
+
+    private void HandleSearchSelection(IReadOnlyList<SearchTableRow> rows, MouseState mouse)
+    {
+        var bounds = GetSearchTableBounds();
+        var rowHeight = 28;
+        var firstRowY = bounds.Y + 40;
+        var visibleCount = Math.Max(1, (bounds.Height - 42) / rowHeight);
+        var visibleRows = rows.Skip(_searchScrollIndex).Take(visibleCount).ToList();
+        for (var index = 0; index < visibleRows.Count; index++)
+        {
+            var rowBounds = new Rectangle(bounds.X, firstRowY + index * rowHeight, bounds.Width, rowHeight - 2);
+            if (WasLeftClicked(rowBounds, mouse))
+            {
+                _selectedSearchPersonId = visibleRows[index].PersonId;
+                return;
+            }
+        }
+    }
+
+    private PersonDetail? GetSelectedPersonDetail()
+    {
+        if (_gameState == null)
+        {
+            return null;
+        }
+
+        var rows = ApplySort(BuildSearchTableRows(), GetSearchColumns(), _searchTableState);
+        _selectedSearchPersonId ??= rows.FirstOrDefault()?.PersonId;
+        return _selectedSearchPersonId.HasValue
+            ? _personDirectoryService.GetDetail(_gameState, _selectedSearchPersonId.Value)
+            : null;
+    }
+
+    private void DrawSearchDetail()
+    {
+        var detail = GetSelectedPersonDetail();
+        var header = GetSearchDetailHeaderBounds();
+        DrawPanel(header, new Color(20, 24, 31));
+        _text!.DrawText(_spriteBatch!, detail?.FullName ?? "No person selected", new Vector2(header.X + 16, header.Y + 10), new Color(94, 203, 144), 20, true);
+        _text.DrawText(_spriteBatch!, detail?.Subtitle ?? "Select a row from the table above.", new Vector2(header.X + 320, header.Y + 12), new Color(220, 226, 236), 14);
+        _text.DrawText(_spriteBatch!, detail?.ClubName ?? string.Empty, new Vector2(header.Right - 220, header.Y + 12), new Color(160, 170, 184), 14, true);
+
+        var properties = detail?.Properties ?? [];
+        var sorted = ApplySort(properties, GetSearchDetailColumns(), _searchDetailTableState);
+        DrawTable(
+            GetSearchDetailTableBounds(),
+            sorted,
+            GetSearchDetailColumns(),
+            _searchDetailTableState,
+            _ => new Color(220, 226, 236),
+            rowHeight: 26);
     }
 
     private IReadOnlyList<string> GetLatestCommentaryLines()
@@ -805,4 +1358,49 @@ internal sealed class Fm100MonoGameApp : Game
 
         return MatchPresentationService.BuildCommentary(latest, _gameState.Clubs).Take(10).ToList();
     }
+
+    private sealed class TableState
+    {
+        public int SortColumnIndex { get; set; }
+        public TableSortDirection Direction { get; set; } = TableSortDirection.Ascending;
+    }
+
+    private sealed record TableColumn<T>(
+        string Header,
+        int Width,
+        Func<T, string> DisplayValue,
+        Func<T, IComparable?> SortValue);
+
+    private sealed record FixtureTableRow(
+        string Type,
+        string DateText,
+        int MatchWeek,
+        string HomeClub,
+        string Score,
+        string AwayClub,
+        bool IsPlayed);
+
+    private sealed record HistoryLeagueRow(
+        int Season,
+        string SerieAChampion,
+        string SerieBChampion,
+        string SerieCChampion);
+
+    private sealed record HistoryCupRow(
+        int Season,
+        string SerieACupWinner,
+        string SerieBCupWinner,
+        string SerieCCupWinner,
+        string MasterCupWinner);
+
+    private sealed record SearchTableRow(
+        Guid PersonId,
+        string Type,
+        string Name,
+        string Role,
+        string Club,
+        int Age,
+        string Nationality,
+        int Reputation,
+        string Status);
 }
