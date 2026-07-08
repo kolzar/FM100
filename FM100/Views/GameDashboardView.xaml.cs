@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
 using FM100.Core.GameState;
 using FM100.Core.Management;
 using FM100.Core.Logging;
@@ -118,7 +119,7 @@ namespace FM100.Views
             ClubNameText.Text = playerClub.Name;
             SeasonText.Text = _gameState.CurrentSeason.ToString();
             DayText.Text = _gameState.DaysElapsed.ToString();
-            CurrentDateSidebarText.Text = GetCurrentGameDate().ToString("dd/MM/yyyy");
+            CurrentDateSidebarText.Text = MatchPresentationService.GetCurrentGameDate(_gameState).ToString("dd/MM/yyyy");
             BudgetText.Text = playerClub.BudgetInMillions.ToString();
             RecordText.Text = $"{playerClub.SeasonWins}-{playerClub.SeasonDraws}-{playerClub.SeasonLosses}";
             GoalDiffText.Text = (playerClub.GoalsFor - playerClub.GoalsAgainst).ToString();
@@ -132,6 +133,8 @@ namespace FM100.Views
             PopulateFinanceSummary();
             PopulateMediaEvent();
             PopulateSeasonSnapshot(playerClub);
+            PopulateMatchdayStatus();
+            PopulateMatchCommentary();
             AchievementsList.ItemsSource = BuildAchievementRows(playerClub);
             PopulateHistoricalStats(playerClub);
             DashboardResultsList.ItemsSource = BuildRecentResultRows(5);
@@ -303,10 +306,12 @@ namespace FM100.Views
             if (fixture == null)
             {
                 NextMatchText.Text = "No upcoming match";
+                MatchdayNoticeText.Text = string.Empty;
                 NextMatchMetaText.Text = "Season fixtures complete";
                 NextMatchStrengthText.Text = string.Empty;
                 NextMatchTacticsText.Text = string.Empty;
                 DashboardPlayButton.IsEnabled = false;
+                DashboardPlayButton.Opacity = 0.6d;
                 return;
             }
 
@@ -314,10 +319,12 @@ namespace FM100.Views
                 !_gameState.Clubs.TryGetValue(fixture.AwayClubId, out var awayClub))
             {
                 NextMatchText.Text = "Fixture unavailable";
+                MatchdayNoticeText.Text = string.Empty;
                 NextMatchMetaText.Text = string.Empty;
                 NextMatchStrengthText.Text = string.Empty;
                 NextMatchTacticsText.Text = string.Empty;
                 DashboardPlayButton.IsEnabled = false;
+                DashboardPlayButton.Opacity = 0.6d;
                 return;
             }
 
@@ -325,8 +332,10 @@ namespace FM100.Views
             var venue = fixture.HomeClubId == playerClub.Id ? "Home" : "Away";
             var playerStrength = GetMatchDayService().CalculateMatchPerformance(playerClub, _gameState);
             var opponentStrength = GetMatchDayService().CalculateMatchPerformance(opponent, _gameState);
+            var matchdayStatus = MatchPresentationService.BuildMatchdayStatus(_gameState, fixture, GetActiveSeasonFixtures());
 
             NextMatchText.Text = $"{playerClub.Name} vs {opponent.Name}";
+            MatchdayNoticeText.Text = matchdayStatus.IsMatchDay ? "Matchday active across all series" : string.Empty;
             NextMatchMetaText.Text = $"{venue} | Week {fixture.MatchWeek} | {fixture.ScheduledDate.ToLocalTime():dd/MM/yyyy}";
             NextMatchStrengthText.Text = $"Projected strength {playerStrength}/20 vs {opponentStrength}/20";
             var opponentPlan = GetTacticalPlanningService().BuildPlan(
@@ -335,7 +344,8 @@ namespace FM100.Views
                 playerClub,
                 fixture.HomeClubId == opponent.Id);
             NextMatchTacticsText.Text = $"Opponent plan: {opponentPlan.Summary}";
-            DashboardPlayButton.IsEnabled = true;
+            DashboardPlayButton.IsEnabled = matchdayStatus.IsMatchDay;
+            DashboardPlayButton.Opacity = matchdayStatus.IsMatchDay ? 1d : 0.6d;
         }
 
         private void DashboardBtn_Click(object sender, RoutedEventArgs e)
@@ -2668,15 +2678,7 @@ namespace FM100.Views
 
         private DateTime GetCurrentGameDate()
         {
-            if (_gameState == null)
-            {
-                return DateTime.Today;
-            }
-
-            var startDate = _gameState.CreatedAt.Kind == DateTimeKind.Unspecified
-                ? _gameState.CreatedAt.Date
-                : _gameState.CreatedAt.ToLocalTime().Date;
-            return startDate.AddDays(_gameState.DaysElapsed);
+            return _gameState == null ? DateTime.Today : MatchPresentationService.GetCurrentGameDate(_gameState);
         }
 
         private void RefreshActiveContent()
@@ -2715,6 +2717,81 @@ namespace FM100.Views
             {
                 PopulateHistory();
             }
+        }
+
+        private void PopulateMatchdayStatus()
+        {
+            if (_gameState == null)
+            {
+                return;
+            }
+
+            var nextFixture = GetNextPlayerFixture();
+            var status = MatchPresentationService.BuildMatchdayStatus(_gameState, nextFixture, GetActiveSeasonFixtures());
+            MatchdayBannerText.Text = status.NoticeText;
+            ContinueButton.Content = status.ContinueLabel;
+            CurrentDateSidebarText.Foreground = status.IsMatchDay
+                ? (Brush)FindResource("SuccessBrush")
+                : (Brush)FindResource("AccentBrush");
+            ContinueButton.Background = status.IsMatchDay
+                ? (Brush)FindResource("AccentBrush")
+                : (Brush)FindResource("SuccessBrush");
+            NextMatchPanel.BorderBrush = status.IsMatchDay
+                ? (Brush)FindResource("AccentBrush")
+                : (Brush)FindResource("BorderBrush");
+        }
+
+        private void PopulateMatchCommentary()
+        {
+            if (_gameState == null)
+            {
+                return;
+            }
+
+            var latestPlayerMatch = _gameState.Matches.Values
+                .Where(match => match.HomeClubId == _gameState.PlayerClubId || match.AwayClubId == _gameState.PlayerClubId)
+                .OrderByDescending(match => match.PlayedAt)
+                .ThenByDescending(match => match.CreatedAt)
+                .FirstOrDefault();
+
+            if (latestPlayerMatch != null)
+            {
+                MatchCommentaryTitleText.Text = $"{GetClubName(latestPlayerMatch.HomeClubId)} {latestPlayerMatch.HomeGoals}-{latestPlayerMatch.AwayGoals} {GetClubName(latestPlayerMatch.AwayClubId)}";
+                MatchCommentaryList.ItemsSource = MatchPresentationService.BuildCommentary(latestPlayerMatch, _gameState.Clubs);
+                return;
+            }
+
+            var nextFixture = GetNextPlayerFixture();
+            if (nextFixture != null)
+            {
+                MatchCommentaryTitleText.Text = $"{GetClubName(nextFixture.HomeClubId)} vs {GetClubName(nextFixture.AwayClubId)}";
+                MatchCommentaryList.ItemsSource = new List<string>
+                {
+                    $"Commentary room ready for matchweek {nextFixture.MatchWeek}.",
+                    $"Kick-off scheduled for {nextFixture.ScheduledDate.ToLocalTime():dd/MM/yyyy}.",
+                    "Play the match to populate the full event-by-event timeline."
+                };
+                return;
+            }
+
+            MatchCommentaryTitleText.Text = "No match available";
+            MatchCommentaryList.ItemsSource = new List<string> { "No match commentary available yet." };
+        }
+
+        private List<Fixture> GetActiveSeasonFixtures()
+        {
+            if (_gameState == null)
+            {
+                return [];
+            }
+
+            return _gameState.Leagues.Values
+                .Where(league => league.Season == _gameState.CurrentSeason)
+                .SelectMany(league => league.FixtureIds)
+                .Select(fixtureId => _gameState.Fixtures.GetValueOrDefault(fixtureId))
+                .Where(fixture => fixture != null)
+                .Select(fixture => fixture!)
+                .ToList();
         }
 
         private async Task PlayNextFixtureAsync()

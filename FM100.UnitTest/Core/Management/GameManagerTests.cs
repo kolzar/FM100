@@ -48,6 +48,7 @@ public class GameManagerTests
         Assert.Equal("3-5-2", gameState.Manager.PreferredFormation);
         Assert.Equal("Analytical", gameState.Manager.Personality);
         Assert.Equal("3-5-2", playerClub.Formation);
+        Assert.Equal(0, await clubRepository.GetCountAsync());
         Assert.Equal(1, gameState.CurrentSeason);
         Assert.Equal(48, gameState.Clubs.Count);
         Assert.Contains(gameState.Clubs.Values, club => club.Name == "Juventus" && club.Division == Division.SerieA);

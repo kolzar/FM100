@@ -104,10 +104,6 @@ public class GameManager : IGameManager
 
             _logger?.LogInformation("Generated {ClubCount} clubs", clubs.Count);
 
-            // Save all generated clubs to the database
-            await _clubRepository.AddManyAsync(clubs);
-            _logger?.LogInformation("Saved {ClubCount} clubs to database", clubs.Count);
-
             // Find the player's selected club
             var playerClub = clubs.FirstOrDefault(c =>
                 c.Name.Equals(playerClubName, StringComparison.OrdinalIgnoreCase) &&

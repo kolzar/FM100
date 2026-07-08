@@ -96,9 +96,10 @@
                                 <Run x:Name="BudgetText" Text="0" Foreground="#ffff00"/>
                                 <Run Text="M"/>
                             </TextBlock>
-                            <TextBlock x:Name="FinanceSummaryText" Text="Latest income --" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" Margin="0,0,0,10"/>
+                            <TextBlock x:Name="FinanceSummaryText" Text="Latest income --" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" Margin="0,0,0,6"/>
+                            <TextBlock x:Name="MatchdayBannerText" Text="Next fixture in 0 day(s)" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource AccentBrush}" Margin="0,0,0,10"/>
 
-                            <Border Background="{DynamicResource TertiaryBackgroundBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Padding="15" CornerRadius="5" Margin="0,12,0,0">
+                            <Border x:Name="NextMatchPanel" Background="{DynamicResource TertiaryBackgroundBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Padding="15" CornerRadius="5" Margin="0,12,0,0">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
@@ -109,6 +110,7 @@
                                     <StackPanel>
                                         <TextBlock Text="NEXT MATCH" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource SecondaryTextBrush}" Margin="0,0,0,6"/>
                                         <TextBlock x:Name="NextMatchText" Text="No upcoming match" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource PrimaryTextBrush}"/>
+                                        <TextBlock x:Name="MatchdayNoticeText" Text="" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource SuccessBrush}" Margin="0,4,0,0"/>
                                         <TextBlock x:Name="NextMatchMetaText" Text="" FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" Margin="0,4,0,0"/>
                                         <TextBlock x:Name="NextMatchStrengthText" Text="" FontSize="12" Foreground="{DynamicResource AccentBrush}" Margin="0,4,0,0"/>
                                         <TextBlock x:Name="NextMatchTacticsText" Text="" FontSize="11" Foreground="{DynamicResource SecondaryTextBrush}" Margin="0,3,0,0" TextWrapping="Wrap"/>
@@ -119,6 +121,23 @@
                                         <Button x:Name="SimulateDecadeButton" Content="SIM 10Y" Height="40" Width="110" Foreground="{DynamicResource PrimaryTextBrush}" Background="{DynamicResource InputBackgroundBrush}" FontSize="12" FontWeight="Bold" Cursor="Hand" Click="SimulateDecade_Click"/>
                                     </StackPanel>
                                 </Grid>
+                            </Border>
+
+                            <Border Background="{DynamicResource TertiaryBackgroundBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Padding="15" CornerRadius="5" Margin="0,12,0,0">
+                                <StackPanel>
+                                    <Grid Margin="0,0,0,8">
+                                        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <TextBlock Text="MATCH COMMENTARY" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                                        <TextBlock x:Name="MatchCommentaryTitleText" Grid.Column="1" Text="No match selected" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource AccentBrush}"/>
+                                    </Grid>
+                                    <ListBox x:Name="MatchCommentaryList" Background="{DynamicResource PrimaryBackgroundBrush}" Foreground="{DynamicResource PrimaryTextBrush}" Height="180" BorderThickness="0">
+                                        <ListBox.ItemTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding}" Margin="4,3" TextWrapping="Wrap" Foreground="{DynamicResource PrimaryTextBrush}"/>
+                                            </DataTemplate>
+                                        </ListBox.ItemTemplate>
+                                    </ListBox>
+                                </StackPanel>
                             </Border>
 
                             <Border Background="{DynamicResource TertiaryBackgroundBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Padding="15" CornerRadius="5" Margin="0,12,0,0">

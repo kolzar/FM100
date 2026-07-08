@@ -20,6 +20,10 @@
 	<PackageVersion Include="Microsoft.Extensions.Logging" Version="10.0.0" />
 	<PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.0" />
 
+	<!-- Graphics -->
+	<PackageVersion Include="MonoGame.Framework.WindowsDX" Version="3.8.1.303" />
+	<PackageVersion Include="System.Drawing.Common" Version="10.0.0" />
+
 	<!-- Testing -->
 	<PackageVersion Include="coverlet.collector" Version="6.0.4" />
 	<PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />

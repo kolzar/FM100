@@ -32,9 +32,9 @@ namespace FM100.Views
                 // Load clubs from database
                 var allClubs = await _clubRepository.GetAllAsync();
 
-                var serieAClubs = allClubs.Where(c => c.Division == Division.SerieA).ToList();
-                var serieBClubs = allClubs.Where(c => c.Division == Division.SerieB).ToList();
-                var serieCClubs = allClubs.Where(c => c.Division == Division.SerieC).ToList();
+                var serieAClubs = ClubSelectionCatalogBuilder.Build(allClubs, Division.SerieA);
+                var serieBClubs = ClubSelectionCatalogBuilder.Build(allClubs, Division.SerieB);
+                var serieCClubs = ClubSelectionCatalogBuilder.Build(allClubs, Division.SerieC);
 
                 // Populate lists
                 SerieAList.ItemsSource = serieAClubs;
@@ -42,7 +42,7 @@ namespace FM100.Views
                 SerieCList.ItemsSource = serieCClubs;
 
                 // Track all clubs
-                foreach (var club in allClubs)
+                foreach (var club in serieAClubs.Concat(serieBClubs).Concat(serieCClubs))
                     _allClubs[club.Id] = club;
 
                 // Wire up selection events
